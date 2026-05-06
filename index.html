@@ -415,6 +415,63 @@
   }
   .drag-rect[hidden] { display: none; }
 
+  /* Audio toggle — sits left of the tutorial button. Pulses while audio
+     is uninitialized to invite the gesture browsers require. */
+  .audio-btn {
+    position: fixed;
+    bottom: 1rem;
+    right: 3.4rem;
+    z-index: 10000;
+    background: rgba(11,6,24,0.8);
+    border: 1px solid var(--border);
+    color: var(--dim);
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    cursor: pointer;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.85rem;
+    backdrop-filter: blur(6px);
+    transition: all 0.18s ease;
+    opacity: 0.45;
+    line-height: 1;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .audio-btn:hover {
+    opacity: 1;
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+  .audio-btn.uninitialized {
+    color: var(--accent);
+    border-color: var(--accent);
+    animation: audio-pulse 2.4s ease-in-out infinite;
+  }
+  .audio-btn.muted {
+    color: var(--dim);
+    text-decoration: line-through;
+    text-decoration-thickness: 2px;
+  }
+  .audio-btn.active {
+    color: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 0 14px rgba(147,51,234,0.3);
+    opacity: 0.7;
+  }
+  @keyframes audio-pulse {
+    0%, 100% {
+      box-shadow: 0 0 0 0 rgba(192,132,252,0.45);
+      opacity: 0.7;
+    }
+    50% {
+      box-shadow: 0 0 0 8px rgba(192,132,252,0);
+      opacity: 1;
+    }
+  }
+
   /* Tutorial button — sits next to the toggle bar, same dim/hover behavior. */
   .tutorial-btn {
     position: fixed;
@@ -897,6 +954,8 @@
   <button data-mode="drag" type="button" title="Click and drag to corrupt a region — it scrambles, then heals itself.">drag corrupt</button>
 </div>
 
+<button class="audio-btn uninitialized" id="audioBtn" type="button" title="enable / mute audio" aria-label="toggle audio">♪</button>
+
 <button class="tutorial-btn" id="tutorialBtn" type="button" title="how this works" aria-label="open tutorial">?</button>
 
 <div class="tutorial-overlay" id="tutorialOverlay" hidden>
@@ -937,6 +996,7 @@
     <section>
       <h3>audio</h3>
       <dl>
+        <dt>♪ button</dt><dd>bottom-right; pulses until audio is initialized. browsers require a user gesture before sound can play. click anywhere or move the mouse to enable, or click the ♪ to toggle mute</dd>
         <dt>letters</dt><dd>bandpass-filtered noise burst</dd>
         <dt>newlines (0A)</dt><dd>low sine thump</dd>
         <dt>punctuation</dt><dd>square-wave click</dd>
@@ -1040,16 +1100,27 @@ const audio = (() => {
   let lastTick = 0;
   const COOLDOWN = 35; // ms — global throttle so many spans don't cacophony
   let enabled = false;
+  let muted = false;
   let masterGain = null;
+  const listeners = new Set();
+  function notify() { listeners.forEach(fn => fn(state())); }
+  function state() { return { initialized: !!ctx, muted, enabled }; }
 
   function ensure() {
-    if (ctx) return;
+    if (ctx) {
+      // If already created but suspended (some browsers do this even after a
+      // gesture), explicitly resume.
+      if (ctx.state === 'suspended') ctx.resume().then(notify);
+      return;
+    }
     try {
       ctx = new (window.AudioContext || window.webkitAudioContext)();
       masterGain = ctx.createGain();
-      masterGain.gain.value = 0.06;
+      masterGain.gain.value = muted ? 0 : 0.06;
       masterGain.connect(ctx.destination);
       enabled = true;
+      if (ctx.state === 'suspended') ctx.resume().then(notify);
+      else notify();
     } catch (e) { /* no audio available */ }
   }
 
@@ -1147,12 +1218,26 @@ const audio = (() => {
     src.stop(ctx.currentTime + dur);
   }
 
-  // Browsers require a user gesture before AudioContext can play.
-  ['pointerdown', 'keydown', 'mousemove'].forEach(ev =>
-    window.addEventListener(ev, ensure, { once: true })
+  // Browsers require a user gesture before AudioContext can play. Listening
+  // on every plausible interaction maximises the chance audio is alive
+  // before the user notices it's silent.
+  const events = ['pointerdown', 'pointermove', 'keydown', 'wheel', 'touchstart', 'scroll'];
+  events.forEach(ev =>
+    window.addEventListener(ev, ensure, { once: true, passive: true })
   );
 
-  return { tick };
+  function setMuted(v) {
+    muted = !!v;
+    if (masterGain) masterGain.gain.value = muted ? 0 : 0.06;
+    notify();
+  }
+  function toggleMute() {
+    ensure();
+    setMuted(!muted);
+  }
+  function onState(fn) { listeners.add(fn); fn(state()); }
+
+  return { tick, ensure, setMuted, toggleMute, onState, state };
 })();
 
 // Animate `el.textContent` from its current value to `target`, with a glitch reveal.
@@ -2048,6 +2133,31 @@ toggleBar.querySelectorAll('button').forEach(btn => {
     modeState[key] = isOn;
     saveModeState(modeState);
   });
+});
+
+// =====================================================================
+// AUDIO BUTTON — visible toggle / status indicator. Pulses until the
+// audio context is initialized so users know to interact.
+// =====================================================================
+const audioBtn = document.getElementById('audioBtn');
+audioBtn.addEventListener('click', () => {
+  // First click should enable (the click itself satisfies the gesture
+  // requirement); subsequent clicks toggle mute.
+  if (!audio.state().initialized) {
+    audio.setMuted(false);
+    audio.ensure();
+  } else {
+    audio.toggleMute();
+  }
+});
+audio.onState(({ initialized, muted }) => {
+  audioBtn.classList.toggle('uninitialized', !initialized);
+  audioBtn.classList.toggle('muted', initialized && muted);
+  audioBtn.classList.toggle('active', initialized && !muted);
+  audioBtn.textContent = '♪';
+  audioBtn.title = !initialized ? 'click to enable audio'
+                  : muted ? 'audio muted — click to unmute'
+                  : 'audio on — click to mute';
 });
 
 // =====================================================================

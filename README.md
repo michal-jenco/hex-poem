@@ -71,7 +71,7 @@ Web Audio synthesizes a different sound for every category of scramble. Master g
 | `space` | Soft lowpass puff |
 | `cross` (scanline sparkle) | Triangle-wave chime |
 
-Browsers require a user gesture before the AudioContext can play — the first pointermove / click / keypress initializes it.
+Browsers require a user gesture before the AudioContext can play. The first pointermove, scroll, click, keypress, touch, or wheel event initializes it. A small `♪` button in the bottom-right corner pulses until audio is live and can also be used to mute / unmute at any time.
 
 ---
 
