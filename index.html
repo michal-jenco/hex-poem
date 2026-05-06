@@ -21,6 +21,10 @@
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
+  /* Scale rem with viewport width so every rem-based size below scales
+     together. Floor 16px (small laptops), ceiling ~30px (4K displays). */
+  html { font-size: clamp(16px, 1.6vw, 30px); }
+
   body {
     background: var(--bg);
     color: var(--poem);
@@ -160,9 +164,9 @@
   }
 
   .hex-row {
-    display: flex;
-    gap: 0.6rem;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 0.4rem;
     padding: 1px 0;
   }
 
