@@ -516,7 +516,7 @@
 <div class="toggles" id="toggles" aria-label="visual mode toggles">
   <button data-mode="heat" type="button" title="Only bytes near the cursor stay decoded; the rest re-scramble.">heat zone</button>
   <button data-mode="rain" type="button" title="Drifting cipher rain in the background.">cipher rain</button>
-  <button data-mode="drag" type="button" title="Click and drag to decrypt a region of bytes or words.">drag decrypt</button>
+  <button data-mode="drag" type="button" title="Click and drag to corrupt a region — it scrambles, then heals itself.">drag corrupt</button>
 </div>
 
 <footer>ASCII · UTF-8 · HEX ENCODED · INSTAGRAM STORY · nyxphaea</footer>
@@ -1082,36 +1082,51 @@ const drag = (() => {
     rectEl.style.height = h + 'px';
     const rect = { left: x, top: y, right: x + w, bottom: y + h };
 
+    // Corrupt anything the rectangle has touched: scramble back to junk, then
+    // self-heal after a jittered delay so the smear fades organically.
     for (const el of allElements) {
       const r = el.getBoundingClientRect();
       const intersects = !(r.right < rect.left || r.left > rect.right ||
                             r.bottom < rect.top || r.top > rect.bottom);
       if (intersects && !touched.has(el)) {
         touched.add(el);
-        unlockElement(el);
-        // Flash the linked counterpart too.
+        corruptThenHeal(el);
+        // Linked counterpart also corrupts + heals.
         if (el.classList.contains('hex-byte')) {
           const word = wordByByteIndex[+el.dataset.byteIndex];
-          if (word) {
-            unlockElement(word);
-            word.classList.add('linked');
-            setTimeout(() => word.classList.remove('linked'), 700);
+          if (word && !touched.has(word)) {
+            touched.add(word);
+            corruptThenHeal(word);
           }
         } else {
           const s = +el.dataset.byteStart, en = +el.dataset.byteEnd;
           if (!isNaN(s)) {
             for (let i = s; i < en; i++) {
               const b = byteSpans[i];
-              if (b) {
-                unlockElement(b);
-                b.classList.add('linked');
-                setTimeout(() => b.classList.remove('linked'), 700);
+              if (b && !touched.has(b)) {
+                touched.add(b);
+                corruptThenHeal(b);
               }
             }
           }
         }
       }
     }
+  }
+
+  // Lock an element to scrambled junk, then auto-decode after 1.6–3.6s.
+  function corruptThenHeal(el) {
+    if (!active) return;
+    if (el.__healTimeout) clearTimeout(el.__healTimeout);
+    lockElement(el);
+    el.classList.add('linked');
+    const delay = 1600 + Math.random() * 2000;
+    el.__healTimeout = setTimeout(() => {
+      el.classList.remove('linked');
+      // Don't fight heat-zone if it took over.
+      if (modeState.heat) return;
+      unlockElement(el);
+    }, delay);
   }
   function onUp() {
     if (!dragging) return;
