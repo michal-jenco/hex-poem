@@ -39,6 +39,8 @@ Only bytes/words within ~200px of the cursor stay decoded. Everything else re-sc
 
 Full-viewport canvas with falling hex/glyph columns at varying speeds and alphas, screen-blended over the page. Each glyph randomly mutates as it falls. Slight purple → pink chromatic offset per character.
 
+Occasionally a column drops out of pure-noise mode and spells a thematic word from the poem vertically (top-to-bottom in the trail). Word columns are slightly larger, brighter, and haloed by a soft vertical flare. Very rarely (~1 in ~28 word events), the author handle `nyxphaea` surfaces — those columns crawl much slower, render in ivory-pink with chromatic aberration, and get a wider, brighter flare that lingers ~7s.
+
 ### `drag corrupt` (default on)
 
 Click + drag inside either panel to draw a selection rectangle. Any byte or word the rectangle touches scrambles back to junk and gets a red linked-flash. Linked counterparts in the other panel corrupt simultaneously. Each touched element self-heals after a jittered 1.6–3.6s delay so the smear fades organically. Defers to heat-zone if both are on.
@@ -51,7 +53,7 @@ Click + drag inside either panel to draw a selection rectangle. Any byte or word
 - **Cross sparkles** — every ~80px of cursor travel, a small radial pop spawns at the intersection with a triangle-wave chime
 - **Phosphor trail** — every ~80ms a fading horizontal ghost line drops behind the cursor with random Y jitter
 - **Background corruption blocks** — small striped flicker rectangles spawn at random positions every 1.4–3.8s (sometimes in small clusters), each ~220ms
-- **Margin ghost text** — drifting hex fragments at the viewport edges, fading in/out, with content that re-rolls mid-drift
+- **Margin ghost text** — fragments drift up the viewport edges. Each picks a thematic word from the poem and cycles three phases during its drift: **hex bytes → scrambled glitch → ASCII word** (e.g. `6C 6F 76 65` → `╫░§∴` → `love`), with re-rolls between cycles. The author handle `nyxphaea` is in the pool and gets distinctly poetic visuals when it surfaces — italic serif font, ivory-pink glow, slower drift, longer lifetime, and a brightness throb
 - **Phantom characters** — every scramble animation adds a chromatic text-shadow and 0.4px blur, giving each character a motion-blur trail
 - **Title glitch** — chromatic ghost layers (red + blue) flicker over "The Conduit Speaks" in irregular bursts at four beats per cycle, while the real title stays fully readable
 

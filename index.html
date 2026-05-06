@@ -728,6 +728,85 @@
     mix-blend-mode: screen;
     will-change: transform, opacity;
   }
+  /* Smaller flare for regular word columns — subtle ambient highlight. */
+  .word-flare {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    width: 28px;
+    transform: translateX(-50%);
+    pointer-events: none;
+    z-index: 4;
+    background:
+      radial-gradient(ellipse 50% 80% at 50% 50%,
+        rgba(232,121,160,0.06) 0%,
+        rgba(192,132,252,0.04) 40%,
+        transparent 75%);
+    mix-blend-mode: screen;
+    opacity: 0;
+    animation: word-flare 4s ease-out forwards;
+  }
+  @keyframes word-flare {
+    0%   { opacity: 0; }
+    20%  { opacity: 0.7; }
+    80%  { opacity: 0.7; }
+    100% { opacity: 0; }
+  }
+
+  /* Vertical flare for the author column — distinct but not blinding. */
+  .author-flare {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    width: 56px;
+    transform: translateX(-50%);
+    pointer-events: none;
+    z-index: 4;
+    background:
+      radial-gradient(ellipse 50% 90% at 50% 50%,
+        rgba(255,229,250,0.10) 0%,
+        rgba(232,121,160,0.07) 35%,
+        rgba(147,51,234,0.04) 60%,
+        transparent 78%);
+    mix-blend-mode: screen;
+    opacity: 0;
+    animation: author-flare 7s ease-out forwards;
+  }
+  .author-flare::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 0; bottom: 0;
+    width: 1px;
+    transform: translateX(-50%);
+    background: linear-gradient(to bottom,
+      transparent, rgba(255,229,250,0.28), rgba(232,121,160,0.22), transparent);
+    filter: blur(0.5px);
+  }
+  @keyframes author-flare {
+    0%   { opacity: 0; }
+    10%  { opacity: 0.85; }
+    88%  { opacity: 0.85; }
+    100% { opacity: 0; }
+  }
+
+  /* Author sigil — when a margin ghost surfaces "nyxphaea". */
+  .margin-ghost.author {
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+    font-size: 1rem;
+    letter-spacing: 0.18em;
+    color: #ffe5fa;
+    text-shadow:
+      0 0 8px var(--red),
+      0 0 18px var(--accent),
+      0 0 32px var(--glow);
+    animation: author-throb 1.6s ease-in-out infinite;
+  }
+  @keyframes author-throb {
+    0%, 100% { filter: brightness(1) saturate(1); }
+    50%      { filter: brightness(1.35) saturate(1.4); }
+  }
 
   /* Frozen state — click-locked elements. */
   .hex-byte.frozen,
@@ -840,7 +919,7 @@
       <h3>modes — bottom toggle bar</h3>
       <dl>
         <dt>heat zone</dt><dd>only bytes within ~200px of your cursor stay decoded; the rest re-scramble. like a flashlight in the dark</dd>
-        <dt>cipher rain</dt><dd>full-viewport falling glyphs, screen-blended. on by default</dd>
+        <dt>cipher rain</dt><dd>full-viewport falling glyphs. occasionally a column spells a word from the poem; very rarely, "nyxphaea" surfaces with a brighter, slower trail. on by default</dd>
         <dt>drag corrupt</dt><dd>click + drag inside a panel to corrupt that region. each touched element heals after 1.6–3.6s. on by default</dd>
       </dl>
     </section>
@@ -851,7 +930,7 @@
         <dt>scanlines</dt><dd>horizontal + vertical scanlines track your cursor. they cross at the cursor with chromatic glow</dd>
         <dt>cross sparkles</dt><dd>every ~80px of cursor travel, a radial pop spawns at the intersection with a chime</dd>
         <dt>corruption blocks</dt><dd>random striped flicker rectangles spawn behind the page</dd>
-        <dt>margin ghosts</dt><dd>drifting hex fragments fade up the viewport edges</dd>
+        <dt>margin ghosts</dt><dd>thematic words drift up the viewport edges, cycling between hex, scrambled glitch, and ASCII. the author's name has its own special look</dd>
       </dl>
     </section>
 
@@ -921,6 +1000,38 @@ const SCRAMBLE_CHARS = "ABCDEF0123456789█▓▒░·∴†‡§¶";
 
 function pick() {
   return SCRAMBLE_CHARS[Math.floor(Math.random() * SCRAMBLE_CHARS.length)];
+}
+
+// Word pool — exclusively words from the decoded poem itself, plus the
+// author handle which gets special, brighter visuals.
+const POEM_WORDS = [
+  "conduit", "retreats", "bear", "blood", "god", "appetite",
+  "she", "will", "turn", "two",
+  "because", "there", "only", "alerts", "your", "soul", "knows",
+  "love", "hate",
+  "return", "same", "pattern",
+  "where", "goes", "die",
+  "lost", "worst", "kind", "loss",
+];
+const AUTHOR = "nyxphaea";
+
+// Pick a word; ~1 in 28 picks returns the author's name (special).
+function pickMysteryWord() {
+  if (Math.random() < 1 / 28) return AUTHOR;
+  return POEM_WORDS[Math.floor(Math.random() * POEM_WORDS.length)];
+}
+function isAuthor(w) { return w === AUTHOR; }
+
+function wordToHex(s) {
+  return Array.from(s)
+    .map(c => c.charCodeAt(0).toString(16).toUpperCase().padStart(2, '0'))
+    .join(' ');
+}
+
+function scrambleString(len) {
+  let out = '';
+  for (let i = 0; i < len; i++) out += pick();
+  return out;
 }
 
 // ---------- AUDIO: faint static tick on each scramble step ----------
@@ -1431,46 +1542,71 @@ setTimeout(corruptionLoop, 2000);
 
 // =====================================================================
 // MARGIN GHOST TEXT — drifting hex fragments at viewport left/right edges.
+// Each ghost picks a mystery word and cycles through three phases during
+// its drift: HEX → SCRAMBLED → ASCII → (re-roll), like a slow decoder
+// puzzling out the transmission.
 // =====================================================================
-function randomHexFragment() {
-  const len = 4 + Math.floor(Math.random() * 8);
-  let out = "";
-  for (let i = 0; i < len; i++) {
-    if (i > 0 && i % 2 === 0) out += " ";
-    out += "0123456789ABCDEF"[Math.floor(Math.random() * 16)];
-  }
-  return out;
-}
 function spawnMarginGhost() {
   const ghost = document.createElement('div');
   ghost.className = 'margin-ghost';
-  ghost.textContent = randomHexFragment();
   const onLeft = Math.random() < 0.5;
   const marginPx = 12 + Math.random() * 36;
   if (onLeft) ghost.style.left = marginPx + 'px';
   else ghost.style.right = marginPx + 'px';
-  const startY = innerHeight + 30;
-  ghost.style.top = startY + 'px';
+  ghost.style.top = (innerHeight + 30) + 'px';
   ghost.style.opacity = '0';
   document.body.appendChild(ghost);
 
+  // Pick the word and pre-compute its hex form. Phase advances every ~1.4s.
+  let word = pickMysteryWord();
+  let hex = wordToHex(word);
+  let phase = 0; // 0=hex, 1=scrambled, 2=ascii
+  if (isAuthor(word)) ghost.classList.add('author');
+
+  function render() {
+    if (phase === 0) ghost.textContent = hex;
+    else if (phase === 1) ghost.textContent = scrambleString(word.length);
+    else ghost.textContent = word;
+  }
+  render();
+
+  const phaseInt = setInterval(() => {
+    phase++;
+    if (phase > 2) {
+      phase = 0;
+      // After a full cycle, occasionally swap to a new word.
+      if (Math.random() < 0.55) {
+        word = pickMysteryWord();
+        hex = wordToHex(word);
+        ghost.classList.toggle('author', isAuthor(word));
+      }
+    }
+    render();
+  }, 1300 + Math.random() * 600);
+
+  // While in scrambled phase, jitter the chars rapidly for animation.
+  const jitterInt = setInterval(() => {
+    if (phase === 1) ghost.textContent = scrambleString(word.length);
+  }, 120);
+
+  // Author ghosts drift slower, peak brighter, and last longer.
+  const author = isAuthor(word);
   const driftY = -(innerHeight + 100);
   const driftX = (Math.random() - 0.5) * 30;
-  const peakOpacity = 0.18 + Math.random() * 0.22;
-  const duration = 9000 + Math.random() * 8000;
-
-  // Periodic re-roll of the hex content during drift.
-  const reroll = setInterval(() => {
-    if (Math.random() < 0.3) ghost.textContent = randomHexFragment();
-  }, 350);
+  const peakOpacity = author ? (0.55 + Math.random() * 0.25) : (0.22 + Math.random() * 0.25);
+  const duration = author ? (22000 + Math.random() * 8000) : (12000 + Math.random() * 10000);
 
   const anim = ghost.animate([
-    { transform: 'translate(0,0)',                opacity: 0 },
-    { transform: `translate(${driftX*0.3}px, ${driftY*0.3}px)`, opacity: peakOpacity, offset: 0.2 },
-    { transform: `translate(${driftX*0.7}px, ${driftY*0.7}px)`, opacity: peakOpacity, offset: 0.7 },
+    { transform: 'translate(0,0)', opacity: 0 },
+    { transform: `translate(${driftX*0.3}px, ${driftY*0.3}px)`, opacity: peakOpacity, offset: 0.18 },
+    { transform: `translate(${driftX*0.7}px, ${driftY*0.7}px)`, opacity: peakOpacity, offset: 0.78 },
     { transform: `translate(${driftX}px, ${driftY}px)`, opacity: 0 }
   ], { duration, easing: 'linear' });
-  anim.onfinish = () => { clearInterval(reroll); ghost.remove(); };
+  anim.onfinish = () => {
+    clearInterval(phaseInt);
+    clearInterval(jitterInt);
+    ghost.remove();
+  };
 }
 function marginGhostLoop() {
   spawnMarginGhost();
@@ -1611,21 +1747,45 @@ const rain = (() => {
     ctx.scale(dpr, dpr);
     initColumns();
   }
+
+  // Spawn a vertical flare DOM element that haloes an author column for ~7s.
+  function spawnAuthorFlare(x) {
+    const flare = document.createElement('div');
+    flare.className = 'author-flare';
+    flare.style.left = x + 'px';
+    document.body.appendChild(flare);
+    setTimeout(() => flare.remove(), 7100);
+  }
+  // Smaller flare that haloes a regular word column.
+  function spawnWordFlare(x) {
+    const flare = document.createElement('div');
+    flare.className = 'word-flare';
+    flare.style.left = x + 'px';
+    document.body.appendChild(flare);
+    setTimeout(() => flare.remove(), 4100);
+  }
   function initColumns() {
     const colW = 18;
     const count = Math.ceil(innerWidth / colW);
     columns = [];
     for (let i = 0; i < count; i++) {
-      columns.push({
-        x: i * colW + colW / 2 + (Math.random() * 4 - 2),
-        y: Math.random() * -innerHeight,
-        speed: 0.4 + Math.random() * 1.6,
-        glyph: GLYPHS[Math.floor(Math.random() * GLYPHS.length)],
-        flipEvery: 4 + Math.floor(Math.random() * 14),
-        tick: 0,
-        alpha: 0.15 + Math.random() * 0.45,
-      });
+      columns.push(makeColumn(i * colW + colW / 2 + (Math.random() * 4 - 2)));
     }
+  }
+  function makeColumn(x) {
+    return {
+      x,
+      y: Math.random() * -innerHeight,
+      speed: 0.4 + Math.random() * 1.6,
+      glyph: GLYPHS[Math.floor(Math.random() * GLYPHS.length)],
+      flipEvery: 4 + Math.floor(Math.random() * 14),
+      tick: 0,
+      alpha: 0.15 + Math.random() * 0.45,
+      // Word mode — when set, spells the word's letters vertically as the
+      // column falls. The trail-fade naturally leaves a readable streak.
+      word: null,
+      wordIdx: 0,
+    };
   }
 
   function frame() {
@@ -1640,19 +1800,83 @@ const rain = (() => {
     for (const c of columns) {
       c.y += c.speed;
       c.tick++;
+
       if (c.tick % c.flipEvery === 0) {
-        c.glyph = GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
+        if (c.word) {
+          // Advance through the word; once finished, return to glyph mode.
+          c.wordIdx++;
+          if (c.wordIdx >= c.word.length) {
+            c.word = null;
+            c.glyph = GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
+          } else {
+            c.glyph = c.word[c.wordIdx];
+          }
+        } else {
+          c.glyph = GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
+          // Small chance to enter word mode each flip.
+          if (Math.random() < 0.012) {
+            const w = pickMysteryWord();
+            c.author = isAuthor(w);
+            c.word = w.toUpperCase();
+            c.wordIdx = 0;
+            c.glyph = c.word[0];
+            // Author trails crawl very slowly and stay much brighter.
+            if (c.author) {
+              c.speed = 0.18 + Math.random() * 0.18;
+              c.flipEvery = 12 + Math.floor(Math.random() * 6);
+              c.alpha = 1;
+              // Spawn the haloing flare behind the column for the duration.
+              spawnAuthorFlare(c.x);
+            } else {
+              c.speed = 0.3 + Math.random() * 0.5;
+              c.flipEvery = 8 + Math.floor(Math.random() * 6);
+              c.alpha = Math.max(c.alpha, 0.85);
+              spawnWordFlare(c.x);
+            }
+          }
+        }
       }
+
       if (c.y > innerHeight + 20) {
         c.y = -20;
         c.speed = 0.4 + Math.random() * 1.6;
         c.alpha = 0.15 + Math.random() * 0.45;
+        c.flipEvery = 4 + Math.floor(Math.random() * 14);
+        c.word = null;
+        c.author = false;
       }
-      // Head glyph brighter than the trail.
-      ctx.fillStyle = `rgba(192,132,252,${c.alpha})`;
-      ctx.fillText(c.glyph, c.x, c.y);
-      ctx.fillStyle = `rgba(232,121,160,${c.alpha * 0.4})`;
-      ctx.fillText(c.glyph, c.x + 0.5, c.y - 0.5);
+
+      // Word-mode columns are slightly larger with a soft bloom; author is a
+      // touch larger still with chromatic aberration. Both are tuned to read
+      // as part of the rain rather than dominate the page.
+      if (c.author) {
+        ctx.font = "bold 17px 'Share Tech Mono', monospace";
+        ctx.shadowColor = 'rgba(232,121,160,0.55)';
+        ctx.shadowBlur = 10;
+        ctx.fillStyle = `rgba(255,235,248,${Math.min(1, c.alpha * 0.85)})`;
+        ctx.fillText(c.glyph, c.x, c.y);
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = `rgba(232,121,160,${c.alpha * 0.55})`;
+        ctx.fillText(c.glyph, c.x + 1, c.y - 1);
+        ctx.fillStyle = `rgba(96,165,250,${c.alpha * 0.4})`;
+        ctx.fillText(c.glyph, c.x - 1, c.y + 1);
+        ctx.font = "13px 'Share Tech Mono', monospace";
+      } else if (c.word) {
+        ctx.font = "bold 14px 'Share Tech Mono', monospace";
+        ctx.shadowColor = 'rgba(232,121,160,0.4)';
+        ctx.shadowBlur = 6;
+        ctx.fillStyle = `rgba(232,180,232,${Math.min(1, c.alpha * 0.95)})`;
+        ctx.fillText(c.glyph, c.x, c.y);
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = `rgba(232,121,160,${c.alpha * 0.5})`;
+        ctx.fillText(c.glyph, c.x + 0.8, c.y - 0.8);
+        ctx.font = "13px 'Share Tech Mono', monospace";
+      } else {
+        ctx.fillStyle = `rgba(192,132,252,${c.alpha})`;
+        ctx.fillText(c.glyph, c.x, c.y);
+        ctx.fillStyle = `rgba(232,121,160,${c.alpha * 0.4})`;
+        ctx.fillText(c.glyph, c.x + 0.5, c.y - 0.5);
+      }
     }
     raf = requestAnimationFrame(frame);
   }
