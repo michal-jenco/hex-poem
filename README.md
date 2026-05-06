@@ -77,13 +77,15 @@ Browsers require a user gesture before the AudioContext can play. The first clic
 
 ## Source
 
-The poem was encoded as 41 lines of 8 hex bytes each (328 bytes total), decoded as plain ASCII. Hex source is embedded as the `raw` array near the top of the script in `index.html`.
+The poem was encoded as 21 full lines of 8 hex bytes plus a 2-byte tail (170 bytes total), decoded as plain ASCII. Hex source is embedded as the `raw` array near the top of the script in `index.html`.
 
 ```
 54 68 65 20 43 6F 6E 64    →   "The Cond"
 75 69 74 20 72 65 74 72    →   "uit retr"
 65 61 74 73 20 74 6F 20    →   "eats to "
 ...
+6C 6F 6F 6B 69 6E 67 2E    →   "looking."
+20 0A                       →   " \n"
 ```
 
 ---
