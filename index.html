@@ -389,6 +389,74 @@
     pointer-events: none;
   }
 
+  /* Cipher rain — fixed full-viewport canvas, faint screen-blend overlay. */
+  .rain-canvas {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 4;
+    mix-blend-mode: screen;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+  }
+  .rain-canvas.active { opacity: 0.55; }
+
+  /* Drag-select rectangle. */
+  .drag-rect {
+    position: fixed;
+    border: 1px dashed var(--accent);
+    background: linear-gradient(135deg, rgba(192,132,252,0.06), rgba(232,121,160,0.04));
+    box-shadow: 0 0 12px rgba(192,132,252,0.25), inset 0 0 12px rgba(232,121,160,0.1);
+    pointer-events: none;
+    z-index: 9990;
+    border-radius: 2px;
+  }
+  .drag-rect[hidden] { display: none; }
+
+  /* Toggle bar — bottom center, dim until hovered. */
+  .toggles {
+    position: fixed;
+    bottom: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 0.4rem;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.55rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    z-index: 10000;
+    opacity: 0.35;
+    transition: opacity 0.3s ease;
+  }
+  .toggles:hover { opacity: 1; }
+  .toggles button {
+    background: rgba(11,6,24,0.8);
+    border: 1px solid var(--border);
+    color: var(--dim);
+    padding: 0.5rem 0.85rem;
+    cursor: pointer;
+    border-radius: 2px;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    transition: all 0.18s ease;
+    backdrop-filter: blur(6px);
+  }
+  .toggles button:hover {
+    border-color: var(--accent);
+    color: var(--hex-bright);
+  }
+  .toggles button.on {
+    border-color: var(--accent);
+    color: var(--accent);
+    text-shadow: 0 0 8px var(--glow);
+    background: rgba(192,132,252,0.08);
+    box-shadow: 0 0 14px rgba(147,51,234,0.25), inset 0 0 12px rgba(192,132,252,0.05);
+  }
+
   .scan-trail {
     position: fixed;
     left: 0;
@@ -439,7 +507,17 @@
 
 </div>
 
+<canvas class="rain-canvas" id="rainCanvas"></canvas>
+
 <div class="scanline" id="scanline"></div>
+
+<div class="drag-rect" id="dragRect" hidden></div>
+
+<div class="toggles" id="toggles" aria-label="visual mode toggles">
+  <button data-mode="heat" type="button" title="Only bytes near the cursor stay decoded; the rest re-scramble.">heat zone</button>
+  <button data-mode="rain" type="button" title="Drifting cipher rain in the background.">cipher rain</button>
+  <button data-mode="drag" type="button" title="Click and drag to decrypt a region of bytes or words.">drag decrypt</button>
+</div>
 
 <footer>ASCII · UTF-8 · HEX ENCODED · INSTAGRAM STORY · nyxphaea</footer>
 
@@ -811,6 +889,295 @@ window.addEventListener('mousemove', (e) => {
 });
 
 window.addEventListener('mouseleave', () => scanline.classList.remove('active'));
+
+// =====================================================================
+// MODES — heat zone, cipher rain, drag decrypt. All togglable.
+// =====================================================================
+
+const allElements = [...byteSpans, ...wordSpans];
+
+// Helpers to lock/unlock a single element with the scramble animation.
+function lockElement(el) {
+  if (el.classList.contains('locked')) return;
+  el.classList.add('locked');
+  const target = el.classList.contains('hex-byte') ? el.dataset.hex : el.dataset.original;
+  scrambleTo(el, scrambledLike(target), { duration: 280, silent: true });
+}
+function unlockElement(el) {
+  if (!el.classList.contains('locked')) return;
+  el.classList.remove('locked');
+  const target = el.classList.contains('hex-byte') ? el.dataset.hex : el.dataset.original;
+  scrambleTo(el, target, { duration: 280, silent: true });
+}
+
+// Track latest cursor position globally (also used by heat zone).
+let cursorX = -9999, cursorY = -9999;
+window.addEventListener('mousemove', (e) => {
+  cursorX = e.clientX;
+  cursorY = e.clientY;
+});
+
+// ---------- HEAT ZONE ----------
+const heat = (() => {
+  let active = false;
+  let raf = null;
+  const RADIUS = 200;
+  const lastFlip = new WeakMap();
+  const FLIP_COOLDOWN = 320;
+
+  function tick() {
+    if (!active) return;
+    const now = performance.now();
+    for (const el of allElements) {
+      const r = el.getBoundingClientRect();
+      if (r.bottom < -50 || r.top > window.innerHeight + 50) continue;
+      const cx = r.left + r.width / 2;
+      const cy = r.top + r.height / 2;
+      const d = Math.hypot(cx - cursorX, cy - cursorY);
+      const wantUnlocked = d < RADIUS;
+      const isLocked = el.classList.contains('locked');
+      if (wantUnlocked === !isLocked) continue;
+      const last = lastFlip.get(el) || 0;
+      if (now - last < FLIP_COOLDOWN) continue;
+      lastFlip.set(el, now);
+      if (wantUnlocked) unlockElement(el);
+      else lockElement(el);
+    }
+    raf = requestAnimationFrame(tick);
+  }
+
+  return {
+    enable() {
+      active = true;
+      // Lock everything initially — only the area near the cursor will reveal.
+      allElements.forEach(lockElement);
+      raf = requestAnimationFrame(tick);
+    },
+    disable() {
+      active = false;
+      cancelAnimationFrame(raf);
+      // Decode everything back.
+      allElements.forEach(unlockElement);
+    },
+  };
+})();
+
+// ---------- CIPHER RAIN ----------
+const rain = (() => {
+  const canvas = document.getElementById('rainCanvas');
+  const ctx = canvas.getContext('2d');
+  let active = false;
+  let raf = null;
+  let columns = [];
+  let dpr = 1;
+
+  const GLYPHS = "0123456789ABCDEF·∴†‡§¶█▓▒░";
+
+  function resize() {
+    dpr = window.devicePixelRatio || 1;
+    canvas.width = innerWidth * dpr;
+    canvas.height = innerHeight * dpr;
+    ctx.scale(dpr, dpr);
+    initColumns();
+  }
+  function initColumns() {
+    const colW = 18;
+    const count = Math.ceil(innerWidth / colW);
+    columns = [];
+    for (let i = 0; i < count; i++) {
+      columns.push({
+        x: i * colW + colW / 2 + (Math.random() * 4 - 2),
+        y: Math.random() * -innerHeight,
+        speed: 0.4 + Math.random() * 1.6,
+        glyph: GLYPHS[Math.floor(Math.random() * GLYPHS.length)],
+        flipEvery: 4 + Math.floor(Math.random() * 14),
+        tick: 0,
+        alpha: 0.15 + Math.random() * 0.45,
+      });
+    }
+  }
+
+  function frame() {
+    if (!active) return;
+    // Slight trail: fade prior frame instead of clearing fully.
+    ctx.fillStyle = 'rgba(6, 3, 15, 0.22)';
+    ctx.fillRect(0, 0, innerWidth, innerHeight);
+
+    ctx.font = "13px 'Share Tech Mono', monospace";
+    ctx.textAlign = 'center';
+
+    for (const c of columns) {
+      c.y += c.speed;
+      c.tick++;
+      if (c.tick % c.flipEvery === 0) {
+        c.glyph = GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
+      }
+      if (c.y > innerHeight + 20) {
+        c.y = -20;
+        c.speed = 0.4 + Math.random() * 1.6;
+        c.alpha = 0.15 + Math.random() * 0.45;
+      }
+      // Head glyph brighter than the trail.
+      ctx.fillStyle = `rgba(192,132,252,${c.alpha})`;
+      ctx.fillText(c.glyph, c.x, c.y);
+      ctx.fillStyle = `rgba(232,121,160,${c.alpha * 0.4})`;
+      ctx.fillText(c.glyph, c.x + 0.5, c.y - 0.5);
+    }
+    raf = requestAnimationFrame(frame);
+  }
+
+  return {
+    enable() {
+      active = true;
+      canvas.classList.add('active');
+      resize();
+      window.addEventListener('resize', resize);
+      raf = requestAnimationFrame(frame);
+    },
+    disable() {
+      active = false;
+      cancelAnimationFrame(raf);
+      canvas.classList.remove('active');
+      window.removeEventListener('resize', resize);
+      // Clear after fade-out
+      setTimeout(() => ctx.clearRect(0, 0, canvas.width, canvas.height), 700);
+    },
+  };
+})();
+
+// ---------- DRAG DECRYPT ----------
+const drag = (() => {
+  const rectEl = document.getElementById('dragRect');
+  let active = false;
+  let dragging = false;
+  let startX = 0, startY = 0;
+  let touched = new Set(); // elements decoded during the current drag
+
+  function onDown(e) {
+    if (!active) return;
+    // Allow drags only within the panels area.
+    const path = e.composedPath();
+    const inPanel = path.some(n => n.classList && n.classList.contains('panel'));
+    if (!inPanel) return;
+    e.preventDefault();
+    dragging = true;
+    touched = new Set();
+    startX = e.clientX;
+    startY = e.clientY;
+    rectEl.style.left = startX + 'px';
+    rectEl.style.top = startY + 'px';
+    rectEl.style.width = '0px';
+    rectEl.style.height = '0px';
+    rectEl.hidden = false;
+  }
+  function onMove(e) {
+    if (!active || !dragging) return;
+    const x = Math.min(startX, e.clientX);
+    const y = Math.min(startY, e.clientY);
+    const w = Math.abs(e.clientX - startX);
+    const h = Math.abs(e.clientY - startY);
+    rectEl.style.left = x + 'px';
+    rectEl.style.top = y + 'px';
+    rectEl.style.width = w + 'px';
+    rectEl.style.height = h + 'px';
+    const rect = { left: x, top: y, right: x + w, bottom: y + h };
+
+    for (const el of allElements) {
+      const r = el.getBoundingClientRect();
+      const intersects = !(r.right < rect.left || r.left > rect.right ||
+                            r.bottom < rect.top || r.top > rect.bottom);
+      if (intersects && !touched.has(el)) {
+        touched.add(el);
+        unlockElement(el);
+        // Flash the linked counterpart too.
+        if (el.classList.contains('hex-byte')) {
+          const word = wordByByteIndex[+el.dataset.byteIndex];
+          if (word) {
+            unlockElement(word);
+            word.classList.add('linked');
+            setTimeout(() => word.classList.remove('linked'), 700);
+          }
+        } else {
+          const s = +el.dataset.byteStart, en = +el.dataset.byteEnd;
+          if (!isNaN(s)) {
+            for (let i = s; i < en; i++) {
+              const b = byteSpans[i];
+              if (b) {
+                unlockElement(b);
+                b.classList.add('linked');
+                setTimeout(() => b.classList.remove('linked'), 700);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  function onUp() {
+    if (!dragging) return;
+    dragging = false;
+    rectEl.hidden = true;
+  }
+
+  return {
+    enable() {
+      active = true;
+      window.addEventListener('mousedown', onDown);
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+      document.body.style.userSelect = 'none';
+    },
+    disable() {
+      active = false;
+      window.removeEventListener('mousedown', onDown);
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      rectEl.hidden = true;
+      document.body.style.userSelect = '';
+    },
+  };
+})();
+
+// ---------- TOGGLE WIRING ----------
+const modes = { heat, rain, drag };
+const toggleBar = document.getElementById('toggles');
+
+const STORAGE_KEY = 'nyxphaea-modes-v1';
+const defaults = { heat: false, rain: true, drag: true };
+
+function loadModeState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return { ...defaults };
+    return { ...defaults, ...JSON.parse(raw) };
+  } catch {
+    return { ...defaults };
+  }
+}
+function saveModeState(state) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
+}
+
+const modeState = loadModeState();
+
+// Apply persisted (or default) state on load.
+Object.entries(modeState).forEach(([key, on]) => {
+  const btn = toggleBar.querySelector(`[data-mode="${key}"]`);
+  if (!btn || !on) return;
+  btn.classList.add('on');
+  modes[key].enable();
+});
+
+toggleBar.querySelectorAll('button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const key = btn.dataset.mode;
+    const isOn = btn.classList.toggle('on');
+    if (isOn) modes[key].enable();
+    else modes[key].disable();
+    modeState[key] = isOn;
+    saveModeState(modeState);
+  });
+});
 </script>
 </body>
 </html>
