@@ -415,6 +415,161 @@
   }
   .drag-rect[hidden] { display: none; }
 
+  /* Tutorial button — sits next to the toggle bar, same dim/hover behavior. */
+  .tutorial-btn {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+    z-index: 10000;
+    background: rgba(11,6,24,0.8);
+    border: 1px solid var(--border);
+    color: var(--dim);
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    cursor: pointer;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.85rem;
+    font-weight: bold;
+    backdrop-filter: blur(6px);
+    transition: all 0.18s ease;
+    opacity: 0.45;
+    line-height: 1;
+    padding: 0;
+  }
+  .tutorial-btn:hover {
+    opacity: 1;
+    color: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 0 14px rgba(147,51,234,0.3);
+  }
+
+  /* Tutorial overlay. */
+  .tutorial-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10100;
+    background: rgba(6,3,15,0.78);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    animation: fade-in 0.3s ease;
+    overflow-y: auto;
+  }
+  .tutorial-overlay[hidden] { display: none; }
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  .tutorial-card {
+    position: relative;
+    max-width: 44rem;
+    width: 100%;
+    background: linear-gradient(180deg, #0d0728 0%, #100835 100%);
+    border: 1px solid var(--border);
+    box-shadow:
+      0 0 60px rgba(147,51,234,0.3),
+      inset 0 0 40px rgba(6,3,15,0.6);
+    padding: 2.2rem 2.4rem 2rem;
+    color: var(--poem);
+    font-family: 'IM Fell English', serif;
+    font-size: 0.95rem;
+    line-height: 1.7;
+    animation: card-rise 0.4s ease;
+  }
+  @keyframes card-rise {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .tutorial-card h2 {
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+    font-size: 1.6rem;
+    color: var(--accent);
+    text-shadow: 0 0 20px var(--glow);
+    margin-bottom: 0.2rem;
+  }
+  .tutorial-card .tut-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.55rem;
+    letter-spacing: 0.3em;
+    color: var(--dim);
+    text-transform: uppercase;
+    margin-bottom: 1.4rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.8rem;
+  }
+  .tutorial-card section { margin-bottom: 1.4rem; }
+  .tutorial-card section:last-child { margin-bottom: 0; }
+  .tutorial-card section h3 {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--hex-bright);
+    margin-bottom: 0.6rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .tutorial-card section h3::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--border), transparent);
+  }
+  .tutorial-card dl {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.5rem 1.2rem;
+    margin: 0;
+  }
+  .tutorial-card dt {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+  .tutorial-card dd {
+    margin: 0;
+    color: var(--poem);
+    font-size: 0.9rem;
+  }
+  .tutorial-card .footnote {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.55rem;
+    letter-spacing: 0.2em;
+    color: var(--dim);
+    text-transform: uppercase;
+    margin-top: 1.4rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    text-align: center;
+  }
+  .tutorial-close {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.8rem;
+    background: transparent;
+    border: none;
+    color: var(--dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1.4rem;
+    cursor: pointer;
+    width: 2rem;
+    height: 2rem;
+    line-height: 1;
+    transition: all 0.18s ease;
+    padding: 0;
+  }
+  .tutorial-close:hover {
+    color: var(--red);
+    text-shadow: 0 0 8px var(--red);
+  }
+
   /* Toggle bar — bottom center, dim until hovered. */
   .toggles {
     position: fixed;
@@ -456,6 +611,139 @@
     background: rgba(192,132,252,0.08);
     box-shadow: 0 0 14px rgba(147,51,234,0.25), inset 0 0 12px rgba(192,132,252,0.05);
   }
+
+  /* Vertical scanline counterpart. */
+  .scanline-v {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    pointer-events: none;
+    z-index: 9999;
+    transform: translateX(-50%);
+    background: linear-gradient(
+      to right,
+      transparent 0%,
+      rgba(192,132,252,0.04) 30%,
+      rgba(232,121,160,0.18) 50%,
+      rgba(192,132,252,0.04) 70%,
+      transparent 100%
+    );
+    box-shadow:
+      0 0 12px rgba(192,132,252,0.25),
+      0 0 28px rgba(147,51,234,0.18);
+    mix-blend-mode: screen;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  .scanline-v.active { opacity: 1; }
+  .scanline-v::before {
+    content: '';
+    position: absolute;
+    inset: 0 -1px;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(255,255,255,0.05) 0 2px,
+      transparent 2px 5px
+    );
+  }
+
+  /* Cross sparkle at the scanline intersection (= cursor). */
+  .scan-cross {
+    position: fixed;
+    width: 22px;
+    height: 22px;
+    pointer-events: none;
+    z-index: 10001;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(232,121,160,0.6) 30%, transparent 70%);
+    border-radius: 50%;
+    mix-blend-mode: screen;
+    animation: cross-pop 0.45s ease-out forwards;
+  }
+  @keyframes cross-pop {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.3); }
+    20%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(2.4); }
+  }
+
+  /* Scrambling motion-blur trail (phantom characters). */
+  .hex-byte.scrambling,
+  .word.scrambling {
+    text-shadow:
+      0 0 6px currentColor,
+      0.7px 0 0 rgba(232,121,160,0.55),
+      -0.7px 0 0 rgba(96,165,250,0.45),
+      0 0 14px rgba(192,132,252,0.5);
+    filter: blur(0.4px);
+  }
+
+  /* Background corruption blocks — random rectangular static flashes. */
+  .corruption-block {
+    position: fixed;
+    pointer-events: none;
+    z-index: 3;
+    mix-blend-mode: screen;
+    background-image:
+      repeating-linear-gradient(
+        to bottom,
+        rgba(232,121,160,0.18) 0 1px,
+        transparent 1px 3px
+      ),
+      linear-gradient(90deg, rgba(192,132,252,0.12), rgba(96,165,250,0.08));
+    border: 1px solid rgba(192,132,252,0.15);
+    animation: corrupt-flicker 0.18s steps(2, end);
+  }
+  @keyframes corrupt-flicker {
+    0%   { opacity: 0; transform: translateX(0); }
+    20%  { opacity: 0.9; transform: translateX(-2px); }
+    50%  { opacity: 0.5; transform: translateX(2px); }
+    80%  { opacity: 0.85; transform: translateX(-1px); }
+    100% { opacity: 0; transform: translateX(0); }
+  }
+
+  /* Margin ghost text — drifting hex fragments at viewport edges. */
+  .margin-ghost {
+    position: fixed;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--hex);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 2;
+    letter-spacing: 0.15em;
+    white-space: nowrap;
+    text-shadow: 0 0 4px var(--glow);
+    mix-blend-mode: screen;
+    will-change: transform, opacity;
+  }
+
+  /* Frozen state — click-locked elements. */
+  .hex-byte.frozen,
+  .word.frozen {
+    outline: 1px dashed rgba(232,121,160,0.6);
+    outline-offset: 2px;
+    border-radius: 2px;
+    color: var(--red) !important;
+    text-shadow: 0 0 8px var(--red), 0 0 2px #fff !important;
+  }
+
+  /* Bleed clones — flying copies of hex bytes when a poem word is hovered. */
+  .bleed-clone {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.78rem;
+    text-align: center;
+    pointer-events: none;
+    color: var(--red);
+    text-shadow: 0 0 8px var(--red), 0 0 14px var(--glow);
+    z-index: 9995;
+    will-change: transform, opacity;
+    mix-blend-mode: screen;
+  }
+
+  /* Title becomes clickable — invitation to "transmit". */
+  header h1 { cursor: pointer; user-select: none; }
 
   .scan-trail {
     position: fixed;
@@ -510,6 +798,7 @@
 <canvas class="rain-canvas" id="rainCanvas"></canvas>
 
 <div class="scanline" id="scanline"></div>
+<div class="scanline-v" id="scanlineV"></div>
 
 <div class="drag-rect" id="dragRect" hidden></div>
 
@@ -517,6 +806,58 @@
   <button data-mode="heat" type="button" title="Only bytes near the cursor stay decoded; the rest re-scramble.">heat zone</button>
   <button data-mode="rain" type="button" title="Drifting cipher rain in the background.">cipher rain</button>
   <button data-mode="drag" type="button" title="Click and drag to corrupt a region — it scrambles, then heals itself.">drag corrupt</button>
+</div>
+
+<button class="tutorial-btn" id="tutorialBtn" type="button" title="how this works" aria-label="open tutorial">?</button>
+
+<div class="tutorial-overlay" id="tutorialOverlay" hidden>
+  <div class="tutorial-card" role="dialog" aria-modal="true" aria-labelledby="tutorialTitle">
+    <button class="tutorial-close" id="tutorialClose" type="button" aria-label="close">×</button>
+    <h2 id="tutorialTitle">transmission protocol</h2>
+    <div class="tut-sub">how to receive</div>
+
+    <section>
+      <h3>byte &amp; word</h3>
+      <dl>
+        <dt>hover hex byte</dt><dd>scrambles into the decoded character; the matching word in the poem lights up red</dd>
+        <dt>hover poem word</dt><dd>scrambles into hex; clones of the corresponding bytes arc out from the hex panel toward the word</dd>
+        <dt>click byte / word</dt><dd>freezes it in place (dashed red outline). click again to release. frozen elements ignore every other mode</dd>
+        <dt>click the title</dt><dd>"the conduit speaks" — triggers a stanza-by-stanza retransmission; each stanza scrambles, holds, then decodes</dd>
+      </dl>
+    </section>
+
+    <section>
+      <h3>modes — bottom toggle bar</h3>
+      <dl>
+        <dt>heat zone</dt><dd>only bytes within ~200px of your cursor stay decoded; the rest re-scramble. like a flashlight in the dark</dd>
+        <dt>cipher rain</dt><dd>full-viewport falling glyphs, screen-blended. on by default</dd>
+        <dt>drag corrupt</dt><dd>click + drag inside a panel to corrupt that region. each touched element heals after 1.6–3.6s. on by default</dd>
+      </dl>
+    </section>
+
+    <section>
+      <h3>ambient</h3>
+      <dl>
+        <dt>scanlines</dt><dd>horizontal + vertical scanlines track your cursor. they cross at the cursor with chromatic glow</dd>
+        <dt>cross sparkles</dt><dd>every ~80px of cursor travel, a radial pop spawns at the intersection with a chime</dd>
+        <dt>corruption blocks</dt><dd>random striped flicker rectangles spawn behind the page</dd>
+        <dt>margin ghosts</dt><dd>drifting hex fragments fade up the viewport edges</dd>
+      </dl>
+    </section>
+
+    <section>
+      <h3>audio</h3>
+      <dl>
+        <dt>letters</dt><dd>bandpass-filtered noise burst</dd>
+        <dt>newlines (0A)</dt><dd>low sine thump</dd>
+        <dt>punctuation</dt><dd>square-wave click</dd>
+        <dt>spaces</dt><dd>soft lowpass puff</dd>
+        <dt>cross sparkle</dt><dd>triangle-wave chime</dd>
+      </dl>
+    </section>
+
+    <div class="footnote">esc · click outside · or × to close</div>
+  </div>
 </div>
 
 <footer>ASCII · UTF-8 · HEX ENCODED · INSTAGRAM STORY · nyxphaea</footer>
@@ -591,17 +932,84 @@ const audio = (() => {
     } catch (e) { /* no audio available */ }
   }
 
-  function tick() {
+  // Categories: 'control' (newlines) → low thump; 'punct' (.,;:'!?-) → click;
+  // 'space' → soft tap; 'letter' (default) → bandpass static.
+  function tick(category = 'letter') {
     if (!enabled || !ctx) return;
     const now = performance.now();
     if (now - lastTick < COOLDOWN) return;
     lastTick = now;
 
+    if (category === 'control') {
+      // Deep thump: short sine drop.
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(110, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.18);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.9, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.22);
+      osc.connect(g).connect(masterGain);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.25);
+      return;
+    }
+
+    if (category === 'punct') {
+      // Crisp high click.
+      const osc = ctx.createOscillator();
+      osc.type = 'square';
+      osc.frequency.value = 2400 + Math.random() * 600;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.15, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04);
+      osc.connect(g).connect(masterGain);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.05);
+      return;
+    }
+
+    if (category === 'space') {
+      // Soft puff: very brief filtered noise, low gain.
+      const dur = 0.025;
+      const buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) {
+        const t = i / data.length;
+        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - t, 4);
+      }
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      const filt = ctx.createBiquadFilter();
+      filt.type = 'lowpass';
+      filt.frequency.value = 800;
+      const g = ctx.createGain();
+      g.gain.value = 0.3;
+      src.connect(filt).connect(g).connect(masterGain);
+      src.start();
+      src.stop(ctx.currentTime + dur);
+      return;
+    }
+
+    if (category === 'cross') {
+      // Tiny chime for scanline cross-sparkles.
+      const osc = ctx.createOscillator();
+      osc.type = 'triangle';
+      osc.frequency.value = 1800 + Math.random() * 600;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.08, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
+      osc.connect(g).connect(masterGain);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.2);
+      return;
+    }
+
+    // Default 'letter': bandpass-filtered noise burst.
     const dur = 0.04 + Math.random() * 0.03;
     const buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
     const data = buf.getChannelData(0);
     for (let i = 0; i < data.length; i++) {
-      // exponential decay envelope on white noise
       const t = i / data.length;
       data[i] = (Math.random() * 2 - 1) * Math.pow(1 - t, 3);
     }
@@ -635,6 +1043,7 @@ function scrambleTo(el, target, opts = {}) {
   const silent = opts.silent === true;
 
   cancelAnimationFrame(el.__raf);
+  el.classList.add('scrambling');
 
   function frame(now) {
     const p = Math.min(1, (now - start) / duration);
@@ -650,11 +1059,12 @@ function scrambleTo(el, target, opts = {}) {
       }
     }
     el.textContent = out;
-    if (!silent) audio.tick();
+    if (!silent) audio.tick(opts.category);
     if (p < 1) {
       el.__raf = requestAnimationFrame(frame);
     } else {
       el.textContent = target;
+      el.classList.remove('scrambling');
     }
   }
   el.__raf = requestAnimationFrame(frame);
@@ -684,9 +1094,10 @@ raw.forEach(row => {
     const span = document.createElement('span');
     span.className = 'hex-byte';
 
-    if (v === 0x20) span.classList.add('space');
-    else if (v < 0x20 || v === 0x7F) span.classList.add('ctrl');
-    else if (v === 0x27 || v === 0x2E || v === 0x3A) span.classList.add('punct');
+    let category = 'letter';
+    if (v === 0x20) { span.classList.add('space'); category = 'space'; }
+    else if (v < 0x20 || v === 0x7F) { span.classList.add('ctrl'); category = 'control'; }
+    else if (v === 0x27 || v === 0x2E || v === 0x3A) { span.classList.add('punct'); category = 'punct'; }
 
     const printable = (v >= 0x21 && v < 0x7F);
     const glyph = printable
@@ -696,7 +1107,8 @@ raw.forEach(row => {
     span.dataset.hex = h;
     span.dataset.char = glyph;
     span.dataset.byteIndex = byteIndex;
-    span.title = `0x${h} = '${glyph}'`;
+    span.dataset.category = category;
+    span.title = `0x${h} = '${glyph}'  ·  click to freeze`;
     // Start scrambled — the page "decrypts itself" as you scroll.
     span.textContent = scrambledLike(h);
     span.classList.add('locked');
@@ -706,9 +1118,9 @@ raw.forEach(row => {
 
     span.addEventListener('mouseenter', () => {
       if (span.classList.contains('locked')) return;
+      if (span.classList.contains('frozen')) return;
       span.classList.add('revealing');
-      scrambleTo(span, glyph, { duration: 260 });
-      // Light up the corresponding poem word.
+      scrambleTo(span, glyph, { duration: 260, category });
       const word = wordByByteIndex[+span.dataset.byteIndex];
       if (word) word.classList.add('linked');
       setTimeout(() => {
@@ -717,11 +1129,17 @@ raw.forEach(row => {
     });
     span.addEventListener('mouseleave', () => {
       if (span.classList.contains('locked')) return;
+      if (span.classList.contains('frozen')) return;
       span.classList.remove('revealed');
-      scrambleTo(span, h, { duration: 260 });
+      scrambleTo(span, h, { duration: 260, category });
       const word = wordByByteIndex[+span.dataset.byteIndex];
       if (word) word.classList.remove('linked');
       setTimeout(() => span.classList.remove('revealing'), 280);
+    });
+    // Click toggles the "frozen" state — locks current display until clicked again.
+    span.addEventListener('click', (e) => {
+      e.stopPropagation();
+      span.classList.toggle('frozen');
     });
 
     div.appendChild(span);
@@ -785,11 +1203,18 @@ function wrapPoemWords() {
 
       span.addEventListener('mouseenter', () => {
         if (span.classList.contains('locked')) return;
+        if (span.classList.contains('frozen')) return;
         span.classList.add('encoding');
         scrambleTo(span, hex, { duration: 380 });
         const s = +span.dataset.byteStart, e = +span.dataset.byteEnd;
         if (!isNaN(s)) {
-          for (let i = s; i < e; i++) byteSpans[i] && byteSpans[i].classList.add('linked');
+          for (let i = s; i < e; i++) {
+            const b = byteSpans[i];
+            if (b) {
+              b.classList.add('linked');
+              bleedByteToward(b, span); // poem bleeds into hex (clones fly out)
+            }
+          }
         }
         setTimeout(() => {
           if (span.matches(':hover')) span.classList.add('encoded');
@@ -797,6 +1222,7 @@ function wrapPoemWords() {
       });
       span.addEventListener('mouseleave', () => {
         if (span.classList.contains('locked')) return;
+        if (span.classList.contains('frozen')) return;
         span.classList.remove('encoded');
         scrambleTo(span, tok, { duration: 320 });
         const s = +span.dataset.byteStart, e = +span.dataset.byteEnd;
@@ -804,6 +1230,10 @@ function wrapPoemWords() {
           for (let i = s; i < e; i++) byteSpans[i] && byteSpans[i].classList.remove('linked');
         }
         setTimeout(() => span.classList.remove('encoding'), 340);
+      });
+      span.addEventListener('click', (e) => {
+        e.stopPropagation();
+        span.classList.toggle('frozen');
       });
 
       wordSpans.push(span);
@@ -891,7 +1321,197 @@ window.addEventListener('mousemove', (e) => {
 window.addEventListener('mouseleave', () => scanline.classList.remove('active'));
 
 // =====================================================================
-// MODES — heat zone, cipher rain, drag decrypt. All togglable.
+// BLEED CLONES — when a poem word is hovered, copies of its hex bytes
+// fly out from the hex panel toward the word and back, then dissolve.
+// =====================================================================
+const bleedCooldown = new WeakMap();
+function bleedByteToward(byteEl, wordEl) {
+  const last = bleedCooldown.get(byteEl) || 0;
+  const now = performance.now();
+  if (now - last < 600) return;
+  bleedCooldown.set(byteEl, now);
+
+  const fr = byteEl.getBoundingClientRect();
+  const tr = wordEl.getBoundingClientRect();
+  if (fr.width === 0 || tr.width === 0) return;
+
+  const clone = document.createElement('span');
+  clone.className = 'bleed-clone';
+  clone.textContent = byteEl.dataset.hex;
+  clone.style.position = 'fixed';
+  clone.style.left = fr.left + fr.width / 2 + 'px';
+  clone.style.top = fr.top + fr.height / 2 + 'px';
+  clone.style.transform = 'translate(-50%, -50%)';
+  document.body.appendChild(clone);
+
+  const dx = tr.left + tr.width / 2 - (fr.left + fr.width / 2);
+  const dy = tr.top + tr.height / 2 - (fr.top + fr.height / 2);
+  // Curved arc via a midpoint with vertical offset.
+  const midDx = dx * 0.55 + (Math.random() * 30 - 15);
+  const midDy = dy * 0.55 - 30 - Math.random() * 20;
+
+  const anim = clone.animate([
+    { transform: 'translate(-50%, -50%) translate(0,0) scale(1)',                          opacity: 0.95 },
+    { transform: `translate(-50%, -50%) translate(${midDx}px, ${midDy}px) scale(1.15)`,    opacity: 0.85, offset: 0.45 },
+    { transform: `translate(-50%, -50%) translate(${dx}px, ${dy}px) scale(0.85)`,          opacity: 0.5,  offset: 0.7 },
+    { transform: 'translate(-50%, -50%) translate(0,0) scale(0.6)',                        opacity: 0 }
+  ], { duration: 950, easing: 'cubic-bezier(0.45, 0, 0.4, 1)' });
+  anim.onfinish = () => clone.remove();
+}
+
+// =====================================================================
+// VERTICAL SCANLINE + CROSS SPARKLE
+// =====================================================================
+const scanlineV = document.getElementById('scanlineV');
+let crossDistance = 0;
+let lastCrossX = 0, lastCrossY = 0;
+
+window.addEventListener('mousemove', (e) => {
+  scanlineV.classList.add('active');
+  scanlineV.style.left = e.clientX + 'px';
+
+  // Sparkle every ~80px of cursor travel.
+  const dx = e.clientX - lastCrossX, dy = e.clientY - lastCrossY;
+  crossDistance += Math.hypot(dx, dy);
+  lastCrossX = e.clientX;
+  lastCrossY = e.clientY;
+  if (crossDistance > 80) {
+    crossDistance = 0;
+    spawnCrossSparkle(e.clientX, e.clientY);
+  }
+});
+window.addEventListener('mouseleave', () => scanlineV.classList.remove('active'));
+
+function spawnCrossSparkle(x, y) {
+  const dot = document.createElement('div');
+  dot.className = 'scan-cross';
+  dot.style.left = x + 'px';
+  dot.style.top = y + 'px';
+  document.body.appendChild(dot);
+  // Subtle chime — uses cooldown so rapid moves don't spam.
+  audio.tick('cross');
+  setTimeout(() => dot.remove(), 500);
+}
+
+// =====================================================================
+// BACKGROUND CORRUPTION BLOCKS — random rectangular static flashes.
+// =====================================================================
+function spawnCorruptionBlock() {
+  const block = document.createElement('div');
+  block.className = 'corruption-block';
+  const w = 30 + Math.random() * 120;
+  const h = 8 + Math.random() * 30;
+  block.style.left = Math.random() * (innerWidth - w) + 'px';
+  block.style.top = Math.random() * (innerHeight - h) + 'px';
+  block.style.width = w + 'px';
+  block.style.height = h + 'px';
+  document.body.appendChild(block);
+  setTimeout(() => block.remove(), 220);
+}
+function corruptionLoop() {
+  spawnCorruptionBlock();
+  // Sometimes spawn a small cluster.
+  if (Math.random() < 0.18) {
+    setTimeout(spawnCorruptionBlock, 60 + Math.random() * 80);
+    setTimeout(spawnCorruptionBlock, 130 + Math.random() * 80);
+  }
+  setTimeout(corruptionLoop, 1400 + Math.random() * 2400);
+}
+setTimeout(corruptionLoop, 2000);
+
+// =====================================================================
+// MARGIN GHOST TEXT — drifting hex fragments at viewport left/right edges.
+// =====================================================================
+function randomHexFragment() {
+  const len = 4 + Math.floor(Math.random() * 8);
+  let out = "";
+  for (let i = 0; i < len; i++) {
+    if (i > 0 && i % 2 === 0) out += " ";
+    out += "0123456789ABCDEF"[Math.floor(Math.random() * 16)];
+  }
+  return out;
+}
+function spawnMarginGhost() {
+  const ghost = document.createElement('div');
+  ghost.className = 'margin-ghost';
+  ghost.textContent = randomHexFragment();
+  const onLeft = Math.random() < 0.5;
+  const marginPx = 12 + Math.random() * 36;
+  if (onLeft) ghost.style.left = marginPx + 'px';
+  else ghost.style.right = marginPx + 'px';
+  const startY = innerHeight + 30;
+  ghost.style.top = startY + 'px';
+  ghost.style.opacity = '0';
+  document.body.appendChild(ghost);
+
+  const driftY = -(innerHeight + 100);
+  const driftX = (Math.random() - 0.5) * 30;
+  const peakOpacity = 0.18 + Math.random() * 0.22;
+  const duration = 9000 + Math.random() * 8000;
+
+  // Periodic re-roll of the hex content during drift.
+  const reroll = setInterval(() => {
+    if (Math.random() < 0.3) ghost.textContent = randomHexFragment();
+  }, 350);
+
+  const anim = ghost.animate([
+    { transform: 'translate(0,0)',                opacity: 0 },
+    { transform: `translate(${driftX*0.3}px, ${driftY*0.3}px)`, opacity: peakOpacity, offset: 0.2 },
+    { transform: `translate(${driftX*0.7}px, ${driftY*0.7}px)`, opacity: peakOpacity, offset: 0.7 },
+    { transform: `translate(${driftX}px, ${driftY}px)`, opacity: 0 }
+  ], { duration, easing: 'linear' });
+  anim.onfinish = () => { clearInterval(reroll); ghost.remove(); };
+}
+function marginGhostLoop() {
+  spawnMarginGhost();
+  setTimeout(marginGhostLoop, 800 + Math.random() * 1800);
+}
+setTimeout(marginGhostLoop, 1500);
+
+// =====================================================================
+// THE CONDUIT SPEAKS — clicking the title triggers a stanza-by-stanza
+// re-transmission: each <p> in the poem scrambles, holds, decodes.
+// =====================================================================
+const titleEl = document.querySelector('header h1');
+let transmitting = false;
+titleEl.addEventListener('click', () => {
+  if (transmitting) return;
+  transmitting = true;
+  titleEl.style.textShadow = '0 0 50px var(--glow), 0 0 80px var(--red)';
+  const stanzas = document.querySelectorAll('.poem p');
+  let delay = 0;
+  stanzas.forEach((p, idx) => {
+    const words = p.querySelectorAll('.word');
+    setTimeout(() => {
+      words.forEach((w, i) => {
+        if (w.classList.contains('frozen')) return;
+        setTimeout(() => {
+          if (w.classList.contains('frozen')) return;
+          w.classList.add('locked');
+          scrambleTo(w, scrambledLike(w.dataset.original), { duration: 320 });
+        }, i * 30);
+      });
+      setTimeout(() => {
+        words.forEach((w, i) => {
+          if (w.classList.contains('frozen')) return;
+          setTimeout(() => {
+            if (w.classList.contains('frozen')) return;
+            w.classList.remove('locked');
+            scrambleTo(w, w.dataset.original, { duration: 700 });
+          }, i * 35);
+        });
+      }, words.length * 30 + 600);
+    }, delay);
+    delay += words.length * 30 + 1500;
+  });
+  setTimeout(() => {
+    transmitting = false;
+    titleEl.style.textShadow = '';
+  }, delay + 1200);
+});
+
+// =====================================================================
+// MODES — heat zone, cipher rain, drag corrupt. All togglable.
 // =====================================================================
 
 const allElements = [...byteSpans, ...wordSpans];
@@ -929,6 +1549,7 @@ const heat = (() => {
     if (!active) return;
     const now = performance.now();
     for (const el of allElements) {
+      if (el.classList.contains('frozen')) continue;
       const r = el.getBoundingClientRect();
       if (r.bottom < -50 || r.top > window.innerHeight + 50) continue;
       const cx = r.left + r.width / 2;
@@ -1117,6 +1738,7 @@ const drag = (() => {
   // Lock an element to scrambled junk, then auto-decode after 1.6–3.6s.
   function corruptThenHeal(el) {
     if (!active) return;
+    if (el.classList.contains('frozen')) return;
     if (el.__healTimeout) clearTimeout(el.__healTimeout);
     lockElement(el);
     el.classList.add('linked');
@@ -1192,6 +1814,23 @@ toggleBar.querySelectorAll('button').forEach(btn => {
     modeState[key] = isOn;
     saveModeState(modeState);
   });
+});
+
+// =====================================================================
+// TUTORIAL OVERLAY
+// =====================================================================
+const tutorialBtn = document.getElementById('tutorialBtn');
+const tutorialOverlay = document.getElementById('tutorialOverlay');
+const tutorialClose = document.getElementById('tutorialClose');
+function openTutorial() { tutorialOverlay.hidden = false; }
+function closeTutorial() { tutorialOverlay.hidden = true; }
+tutorialBtn.addEventListener('click', openTutorial);
+tutorialClose.addEventListener('click', closeTutorial);
+tutorialOverlay.addEventListener('click', (e) => {
+  if (e.target === tutorialOverlay) closeTutorial();
+});
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !tutorialOverlay.hidden) closeTutorial();
 });
 </script>
 </body>
