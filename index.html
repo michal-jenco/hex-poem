@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>nyxphaea — decoded</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #06030f;
+    --panel: #0b0618;
+    --border: #2a1a4a;
+    --hex: #7b5ea7;
+    --hex-bright: #b89ee8;
+    --accent: #c084fc;
+    --glow: #9333ea;
+    --poem: #e8dff5;
+    --dim: #5a4a7a;
+    --red: #e879a0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--poem);
+    font-family: 'IM Fell English', serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 3rem 1.5rem;
+    background-image:
+      radial-gradient(ellipse 60% 40% at 50% 0%, #1a0530 0%, transparent 70%),
+      radial-gradient(ellipse 40% 60% at 80% 100%, #0d0228 0%, transparent 60%);
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 3rem;
+    animation: fadeDown 1s ease both;
+  }
+
+  header .handle {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--dim);
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+
+  header h1 {
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+    font-size: clamp(1.4rem, 4vw, 2.2rem);
+    color: var(--accent);
+    text-shadow: 0 0 30px var(--glow), 0 0 60px #6d28d960;
+    letter-spacing: 0.05em;
+    position: relative;
+    display: inline-block;
+    animation: title-pulse 4s ease-in-out infinite;
+  }
+  /* Two ghost layers stacked over the real title — they flicker with chromatic
+     aberration on the glitch beats, while the real title stays readable. */
+  header h1::before,
+  header h1::after {
+    content: attr(data-text);
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    color: var(--accent);
+    font-style: italic;
+    letter-spacing: 0.05em;
+    opacity: 0;
+    mix-blend-mode: screen;
+  }
+  header h1::before {
+    color: var(--red);
+    text-shadow: 0 0 8px var(--red);
+    animation: title-ghost-r 5.7s steps(1, end) infinite;
+  }
+  header h1::after {
+    color: #60a5fa;
+    text-shadow: 0 0 8px #60a5fa;
+    animation: title-ghost-b 5.7s steps(1, end) infinite;
+  }
+
+  header .sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--dim);
+    letter-spacing: 0.2em;
+    margin-top: 0.4rem;
+  }
+
+  .divider {
+    width: 200px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), var(--accent), var(--border), transparent);
+    margin: 1.5rem auto;
+  }
+
+  .container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    max-width: 1100px;
+    width: 100%;
+    border: 1px solid var(--border);
+    box-shadow: 0 0 60px #6d28d920, inset 0 0 40px #06030f80;
+    animation: fadeUp 1s ease 0.3s both;
+  }
+
+  @media (max-width: 700px) {
+    .container { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: var(--panel);
+    padding: 2rem;
+  }
+
+  .panel + .panel {
+    border-left: 1px solid var(--border);
+  }
+
+  @media (max-width: 700px) {
+    .panel + .panel { border-left: none; border-top: 1px solid var(--border); }
+  }
+
+  .panel-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .panel-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* HEX PANEL */
+  .hex-grid {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.78rem;
+    line-height: 1.9;
+    color: var(--hex);
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .hex-row {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    padding: 1px 0;
+  }
+
+  .hex-row:hover .hex-byte {
+    color: var(--hex-bright);
+  }
+
+  .hex-byte {
+    transition: color 0.2s, text-shadow 0.2s, letter-spacing 0.2s;
+    cursor: default;
+    min-width: 1.6rem;
+    text-align: center;
+    display: inline-block;
+    will-change: contents;
+  }
+
+  .hex-byte.space  { color: var(--dim); }
+  .hex-byte.ctrl   { color: var(--red); opacity: 0.7; }
+  .hex-byte.punct  { color: var(--accent); }
+
+  .hex-byte.revealing,
+  .hex-byte.revealed {
+    color: var(--hex-bright);
+    text-shadow:
+      0 0 10px var(--glow),
+      -1px 0 var(--red),
+       1px 0 #60a5fa;
+    letter-spacing: 0.08em;
+  }
+  .hex-byte.revealed {
+    color: var(--accent);
+    text-shadow: 0 0 14px var(--glow);
+  }
+
+  .hex-byte.linked {
+    color: var(--red);
+    text-shadow: 0 0 10px var(--red), 0 0 2px #fff;
+    background: radial-gradient(circle at 50% 50%, rgba(232,121,160,0.18), transparent 70%);
+    border-radius: 2px;
+  }
+
+  /* POEM PANEL */
+  .poem {
+    font-family: 'IM Fell English', serif;
+    font-size: 1rem;
+    line-height: 1.9;
+    color: var(--poem);
+  }
+
+  .poem p {
+    margin-bottom: 1.4rem;
+    animation: none;
+  }
+
+  .poem p:first-child {
+    color: #d4c0f0;
+    font-style: italic;
+  }
+
+  .poem .stanza {
+    color: #c4b0e8;
+    margin-bottom: 0.5rem;
+  }
+
+  .poem .refrain {
+    color: var(--dim);
+    font-style: italic;
+    font-size: 0.9rem;
+  }
+
+  .poem .line-key {
+    color: var(--red);
+    font-style: normal;
+  }
+
+  .poem .word {
+    display: inline-block;
+    cursor: default;
+    transition: color 0.2s, text-shadow 0.2s, letter-spacing 0.2s, filter 0.2s;
+    position: relative;
+    will-change: contents;
+  }
+  .poem .word:hover,
+  .poem .word.encoding,
+  .poem .word.encoded {
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--hex-bright);
+    letter-spacing: 0.05em;
+    text-shadow:
+      0 0 8px var(--glow),
+      -1px 0 var(--red),
+       1px 0 #60a5fa;
+    filter: contrast(1.1);
+  }
+  .poem .word.encoded {
+    color: var(--accent);
+  }
+  .poem .word.linked {
+    color: var(--red);
+    text-shadow: 0 0 12px var(--red), 0 0 2px #fff;
+  }
+  .poem .word::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; bottom: -2px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.25s ease;
+    opacity: 0.6;
+  }
+  .poem .word:hover::after,
+  .poem .word.encoded::after {
+    transform: scaleX(1);
+  }
+
+  footer {
+    margin-top: 2.5rem;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--dim);
+    letter-spacing: 0.2em;
+    text-align: center;
+    animation: fadeUp 1s ease 0.6s both;
+  }
+
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Subtle baseline pulse on the real title — never collapses to a slice. */
+  @keyframes title-pulse {
+    0%, 100% {
+      text-shadow: 0 0 30px var(--glow), 0 0 60px #6d28d960;
+      filter: none;
+    }
+    50% {
+      text-shadow: 0 0 42px var(--glow), 0 0 80px #6d28d990, 0 0 120px #6d28d930;
+      filter: brightness(1.08);
+    }
+  }
+
+  /* Red ghost: slice + offset, fires in short bursts at irregular beats. */
+  @keyframes title-ghost-r {
+    0%, 100%   { opacity: 0; transform: translate(0,0); clip-path: inset(0 0 0 0); }
+    /* burst 1 — quick double-blink, top slice drifts left */
+    14%        { opacity: 0.85; transform: translate(-3px, -1px); clip-path: inset(0 0 72% 0); }
+    14.6%      { opacity: 0; transform: translate(0,0); clip-path: inset(0 0 0 0); }
+    15.2%      { opacity: 0.6;  transform: translate(-5px, 1px); clip-path: inset(8% 0 60% 0); }
+    16%        { opacity: 0; }
+    /* burst 2 — middle band tear */
+    37%        { opacity: 0.9; transform: translate(-4px, 0); clip-path: inset(40% 0 40% 0); }
+    38%        { opacity: 0; }
+    /* burst 3 — bottom slice drift, longer */
+    63%        { opacity: 0.7; transform: translate(-2px, 2px); clip-path: inset(72% 0 0 0); }
+    64.8%      { opacity: 0.4; transform: translate(-6px, 2px); }
+    65.5%      { opacity: 0; }
+    /* burst 4 — tiny flicker */
+    84%        { opacity: 0.5; transform: translate(-1px, -2px); clip-path: inset(20% 0 70% 0); }
+    84.4%      { opacity: 0; }
+  }
+
+  /* Blue ghost: mirrors the red beats with opposite offsets and different slices. */
+  @keyframes title-ghost-b {
+    0%, 100%   { opacity: 0; transform: translate(0,0); clip-path: inset(0 0 0 0); }
+    14%        { opacity: 0.85; transform: translate(3px, 1px); clip-path: inset(55% 0 20% 0); }
+    14.6%      { opacity: 0; transform: translate(0,0); clip-path: inset(0 0 0 0); }
+    15.2%      { opacity: 0.6;  transform: translate(5px, -1px); clip-path: inset(35% 0 35% 0); }
+    16%        { opacity: 0; }
+    37%        { opacity: 0.9; transform: translate(4px, 0); clip-path: inset(0 0 60% 0); }
+    38%        { opacity: 0; }
+    63%        { opacity: 0.7; transform: translate(2px, -2px); clip-path: inset(0 0 78% 0); }
+    64.8%      { opacity: 0.4; transform: translate(6px, -2px); }
+    65.5%      { opacity: 0; }
+    84%        { opacity: 0.5; transform: translate(1px, 2px); clip-path: inset(60% 0 12% 0); }
+    84.4%      { opacity: 0; }
+  }
+
+  /* CRT scanline that follows the cursor */
+  .scanline {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 3px;
+    pointer-events: none;
+    z-index: 9999;
+    transform: translateY(-50%);
+    background: linear-gradient(
+      to bottom,
+      transparent 0%,
+      rgba(192,132,252,0.04) 30%,
+      rgba(232,121,160,0.18) 50%,
+      rgba(192,132,252,0.04) 70%,
+      transparent 100%
+    );
+    box-shadow:
+      0 0 12px rgba(192,132,252,0.25),
+      0 0 28px rgba(147,51,234,0.18);
+    mix-blend-mode: screen;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  .scanline.active { opacity: 1; }
+  .scanline::before {
+    content: '';
+    position: absolute;
+    inset: -1px 0;
+    background: repeating-linear-gradient(
+      to right,
+      rgba(255,255,255,0.05) 0 2px,
+      transparent 2px 5px
+    );
+    pointer-events: none;
+  }
+
+  .scan-trail {
+    position: fixed;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    pointer-events: none;
+    z-index: 9998;
+    opacity: 0.35;
+    mix-blend-mode: screen;
+    will-change: top, opacity;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="handle">@nyxphaea</div>
+  <h1 data-text="The Conduit Speaks">The Conduit Speaks</h1>
+  <div class="sub">ASCII · HEX · DECODED</div>
+  <div class="divider"></div>
+</header>
+
+<div class="container">
+
+  <!-- HEX PANEL -->
+  <div class="panel">
+    <div class="panel-label">raw hex</div>
+    <div class="hex-grid" id="hexGrid"></div>
+  </div>
+
+  <!-- POEM PANEL -->
+  <div class="panel">
+    <div class="panel-label">decoded</div>
+    <div class="poem">
+      <p>The Conduit retreats to bear the blood god's appetite.</p>
+      <p class="stanza">She will turn at two.</p>
+      <p class="stanza">Because there are only two alerts your soul knows:<br>
+        <span class="line-key">to love</span> and <span class="line-key">to hate</span>
+      </p>
+      <p class="refrain">there is no return to the same pattern</p>
+      <p class="stanza">where love goes to die</p>
+      <p class="refrain">love lost is the worst kind of loss</p>
+      <p class="refrain">there is no return to the same pattern</p>
+      <p class="stanza">where love goes to die</p>
+    </div>
+  </div>
+
+</div>
+
+<div class="scanline" id="scanline"></div>
+
+<footer>ASCII · UTF-8 · HEX ENCODED · INSTAGRAM STORY · nyxphaea</footer>
+
+<script>
+const raw = [
+  ['54','68','65','20','43','6F','6E','64'],
+  ['75','69','74','20','72','65','74','72'],
+  ['65','61','74','73','20','74','6F','20'],
+  ['62','65','61','72','20','74','68','65'],
+  ['20','62','6C','6F','6F','64','20','67'],
+  ['6F','64','27','73','20','61','70','70'],
+  ['65','74','69','74','65','2E','20','0A'],
+  ['0A','53','68','65','20','77','69','6C'],
+  ['6C','20','74','75','72','6E','20','61'],
+  ['74','20','74','77','6F','2E','20','0A'],
+  ['0A','61','74','20','74','77','6F','2E'],
+  ['20','0A','0A','42','65','63','61','75'],
+  ['73','65','20','74','68','65','72','65'],
+  ['20','61','72','65','20','6F','6E','6C'],
+  ['79','20','74','77','6F','20','61','6C'],
+  ['65','72','74','73','20','79','6F','75'],
+  ['72','20','73','6F','75','6C','20','6B'],
+  ['6E','6F','77','73','3A','20','74','6F'],
+  ['20','6C','6F','76','65','20','61','6E'],
+  ['64','20','74','6F','20','68','61','74'],
+  ['65','0A','0A','74','68','65','72','65'],
+  ['20','69','73','20','6E','6F','20','72'],
+  ['65','74','75','72','6E','20','74','6F'],
+  ['20','74','68','65','20','73','61','6D'],
+  ['65','20','70','61','74','74','65','72'],
+  ['6E','0A','0A','77','68','65','72','65'],
+  ['20','6C','6F','76','65','20','67','6F'],
+  ['65','73','20','74','6F','20','64','69'],
+  ['65','0A','0A','6C','6F','76','65','20'],
+  ['6C','6F','73','74','20','69','73','20'],
+  ['74','68','65','20','77','6F','72','73'],
+  ['74','20','6B','69','6E','64','20','6F'],
+  ['66','20','6C','6F','73','73','0A','0A'],
+  ['74','68','65','72','65','20','69','73'],
+  ['20','6E','6F','20','72','65','74','75'],
+  ['72','6E','20','74','6F','20','74','68'],
+  ['65','20','73','61','6D','65','20','70'],
+  ['61','74','74','65','72','6E','0A','0A'],
+  ['77','68','65','72','65','20','6C','6F'],
+  ['76','65','20','67','6F','65','73','20'],
+  ['74','6F','20','64','69','65','0A','0A'],
+];
+
+const SCRAMBLE_CHARS = "ABCDEF0123456789█▓▒░·∴†‡§¶";
+
+function pick() {
+  return SCRAMBLE_CHARS[Math.floor(Math.random() * SCRAMBLE_CHARS.length)];
+}
+
+// ---------- AUDIO: faint static tick on each scramble step ----------
+const audio = (() => {
+  let ctx = null;
+  let lastTick = 0;
+  const COOLDOWN = 35; // ms — global throttle so many spans don't cacophony
+  let enabled = false;
+  let masterGain = null;
+
+  function ensure() {
+    if (ctx) return;
+    try {
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      masterGain = ctx.createGain();
+      masterGain.gain.value = 0.06;
+      masterGain.connect(ctx.destination);
+      enabled = true;
+    } catch (e) { /* no audio available */ }
+  }
+
+  function tick() {
+    if (!enabled || !ctx) return;
+    const now = performance.now();
+    if (now - lastTick < COOLDOWN) return;
+    lastTick = now;
+
+    const dur = 0.04 + Math.random() * 0.03;
+    const buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) {
+      // exponential decay envelope on white noise
+      const t = i / data.length;
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - t, 3);
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const filt = ctx.createBiquadFilter();
+    filt.type = 'bandpass';
+    filt.frequency.value = 1800 + Math.random() * 2200;
+    filt.Q.value = 4;
+    const g = ctx.createGain();
+    g.gain.value = 0.5 + Math.random() * 0.5;
+    src.connect(filt).connect(g).connect(masterGain);
+    src.start();
+    src.stop(ctx.currentTime + dur);
+  }
+
+  // Browsers require a user gesture before AudioContext can play.
+  ['pointerdown', 'keydown', 'mousemove'].forEach(ev =>
+    window.addEventListener(ev, ensure, { once: true })
+  );
+
+  return { tick };
+})();
+
+// Animate `el.textContent` from its current value to `target`, with a glitch reveal.
+// Stores the running RAF id on the element so re-entrant hovers cancel cleanly.
+function scrambleTo(el, target, opts = {}) {
+  const duration = opts.duration ?? 320;
+  const start = performance.now();
+  const len = target.length;
+  const silent = opts.silent === true;
+
+  cancelAnimationFrame(el.__raf);
+
+  function frame(now) {
+    const p = Math.min(1, (now - start) / duration);
+    let out = "";
+    for (let i = 0; i < len; i++) {
+      const threshold = (i + 1) / (len + 2);
+      if (p >= threshold && Math.random() > 0.15) {
+        out += target[i];
+      } else if (target[i] === " ") {
+        out += " ";
+      } else {
+        out += pick();
+      }
+    }
+    el.textContent = out;
+    if (!silent) audio.tick();
+    if (p < 1) {
+      el.__raf = requestAnimationFrame(frame);
+    } else {
+      el.textContent = target;
+    }
+  }
+  el.__raf = requestAnimationFrame(frame);
+}
+
+// Build a scrambled-junk string the same length as `target` (for initial state).
+function scrambledLike(target) {
+  let out = "";
+  for (let i = 0; i < target.length; i++) {
+    out += target[i] === " " ? " " : pick();
+  }
+  return out;
+}
+
+// ---------- HEX PANEL ----------
+const grid = document.getElementById('hexGrid');
+
+// Flat sequence: every byte gets an absolute index so we can map bytes <-> words.
+const byteSpans = []; // index -> span
+let byteIndex = 0;
+
+raw.forEach(row => {
+  const div = document.createElement('div');
+  div.className = 'hex-row';
+  row.forEach(h => {
+    const v = parseInt(h, 16);
+    const span = document.createElement('span');
+    span.className = 'hex-byte';
+
+    if (v === 0x20) span.classList.add('space');
+    else if (v < 0x20 || v === 0x7F) span.classList.add('ctrl');
+    else if (v === 0x27 || v === 0x2E || v === 0x3A) span.classList.add('punct');
+
+    const printable = (v >= 0x21 && v < 0x7F);
+    const glyph = printable
+      ? String.fromCharCode(v)
+      : (v === 0x20 ? '␠' : v === 0x0A ? '␤' : '·');
+
+    span.dataset.hex = h;
+    span.dataset.char = glyph;
+    span.dataset.byteIndex = byteIndex;
+    span.title = `0x${h} = '${glyph}'`;
+    // Start scrambled — the page "decrypts itself" as you scroll.
+    span.textContent = scrambledLike(h);
+    span.classList.add('locked');
+
+    byteSpans[byteIndex] = span;
+    byteIndex++;
+
+    span.addEventListener('mouseenter', () => {
+      if (span.classList.contains('locked')) return;
+      span.classList.add('revealing');
+      scrambleTo(span, glyph, { duration: 260 });
+      // Light up the corresponding poem word.
+      const word = wordByByteIndex[+span.dataset.byteIndex];
+      if (word) word.classList.add('linked');
+      setTimeout(() => {
+        if (span.matches(':hover')) span.classList.add('revealed');
+      }, 260);
+    });
+    span.addEventListener('mouseleave', () => {
+      if (span.classList.contains('locked')) return;
+      span.classList.remove('revealed');
+      scrambleTo(span, h, { duration: 260 });
+      const word = wordByByteIndex[+span.dataset.byteIndex];
+      if (word) word.classList.remove('linked');
+      setTimeout(() => span.classList.remove('revealing'), 280);
+    });
+
+    div.appendChild(span);
+  });
+  grid.appendChild(div);
+});
+
+// Full decoded ASCII string, in the same order as byteSpans.
+const decodedFlat = byteSpans.map(s => String.fromCharCode(parseInt(s.dataset.hex, 16))).join("");
+
+// ---------- POEM PANEL ----------
+// We wrap each word in a <span class="word">, then map each word to the byte indices
+// it occupies in `decodedFlat` by walking forward with a search cursor. This handles
+// the user-edited poem (which omits the duplicated "at two." stanza).
+const wordByByteIndex = {}; // byte index -> word span
+const wordSpans = [];
+
+function wrapPoemWords() {
+  const root = document.querySelector('.poem');
+  if (!root) return;
+
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+  const textNodes = [];
+  let n;
+  while ((n = walker.nextNode())) textNodes.push(n);
+
+  let cursor = 0; // position within decodedFlat
+
+  textNodes.forEach(node => {
+    const text = node.nodeValue;
+    if (!/\S/.test(text)) return;
+    const frag = document.createDocumentFragment();
+    const tokens = text.split(/(\s+)/);
+    tokens.forEach(tok => {
+      if (tok === '') return;
+      if (/^\s+$/.test(tok)) {
+        frag.appendChild(document.createTextNode(tok));
+        return;
+      }
+      const span = document.createElement('span');
+      span.className = 'word';
+
+      const hex = Array.from(tok)
+        .map(c => c.charCodeAt(0).toString(16).toUpperCase().padStart(2, '0'))
+        .join(' ');
+      span.dataset.original = tok;
+      span.dataset.hex = hex;
+      span.textContent = scrambledLike(tok);
+      span.classList.add('locked');
+
+      // Find this word in the decoded byte stream from `cursor` forward.
+      const found = decodedFlat.indexOf(tok, cursor);
+      if (found !== -1) {
+        const start = found;
+        const end = found + tok.length;
+        span.dataset.byteStart = start;
+        span.dataset.byteEnd = end;
+        for (let i = start; i < end; i++) wordByByteIndex[i] = span;
+        cursor = end;
+      }
+
+      span.addEventListener('mouseenter', () => {
+        if (span.classList.contains('locked')) return;
+        span.classList.add('encoding');
+        scrambleTo(span, hex, { duration: 380 });
+        const s = +span.dataset.byteStart, e = +span.dataset.byteEnd;
+        if (!isNaN(s)) {
+          for (let i = s; i < e; i++) byteSpans[i] && byteSpans[i].classList.add('linked');
+        }
+        setTimeout(() => {
+          if (span.matches(':hover')) span.classList.add('encoded');
+        }, 380);
+      });
+      span.addEventListener('mouseleave', () => {
+        if (span.classList.contains('locked')) return;
+        span.classList.remove('encoded');
+        scrambleTo(span, tok, { duration: 320 });
+        const s = +span.dataset.byteStart, e = +span.dataset.byteEnd;
+        if (!isNaN(s)) {
+          for (let i = s; i < e; i++) byteSpans[i] && byteSpans[i].classList.remove('linked');
+        }
+        setTimeout(() => span.classList.remove('encoding'), 340);
+      });
+
+      wordSpans.push(span);
+      frag.appendChild(span);
+    });
+    node.parentNode.replaceChild(frag, node);
+  });
+}
+
+wrapPoemWords();
+
+// ---------- DECODE ON SCROLL ----------
+// Strategy: run an immediate "first-paint sweep" for everything currently in view,
+// staggered by visual position (top-left to bottom-right) and clamped to ~1.6s total
+// regardless of how many elements there are. Anything not yet visible gets handled by
+// IntersectionObserver as the user scrolls.
+
+function revealEl(el, delay = 0) {
+  if (!el.classList.contains('locked')) return;
+  const target = el.classList.contains('hex-byte') ? el.dataset.hex : el.dataset.original;
+  setTimeout(() => {
+    el.classList.remove('locked');
+    scrambleTo(el, target, { duration: 1520 });
+  }, delay);
+}
+
+const allLocked = [...byteSpans, ...wordSpans];
+const vh = window.innerHeight;
+const vw = window.innerWidth;
+
+// Partition: visible now vs. below the fold.
+const visibleNow = [];
+const offscreen = [];
+allLocked.forEach(el => {
+  const r = el.getBoundingClientRect();
+  if (r.bottom > 0 && r.top < vh) visibleNow.push({ el, r });
+  else offscreen.push(el);
+});
+
+// Sort visible elements by a top-left wavefront and stagger across a fixed window.
+visibleNow.sort((a, b) => (a.r.top + a.r.left * 0.3) - (b.r.top + b.r.left * 0.3));
+const SWEEP_MS = 1600;
+visibleNow.forEach(({ el }, i) => {
+  const t = visibleNow.length > 1 ? (i / (visibleNow.length - 1)) * SWEEP_MS : 0;
+  revealEl(el, t + Math.random() * 60);
+});
+
+// Offscreen elements: reveal as they enter the viewport, with a small jitter.
+const io = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (!entry.isIntersecting) return;
+    revealEl(entry.target, Math.random() * 200);
+    io.unobserve(entry.target);
+  });
+}, { threshold: 0.05, rootMargin: '0px 0px -8% 0px' });
+
+offscreen.forEach(el => io.observe(el));
+
+// ---------- SCANLINE CURSOR TRAIL ----------
+// One persistent scanline tracks the cursor Y; periodically a faint trail ghost
+// is spawned at the same Y and faded out, like CRT phosphor lag.
+const scanline = document.getElementById('scanline');
+let lastTrail = 0;
+
+window.addEventListener('mousemove', (e) => {
+  scanline.classList.add('active');
+  scanline.style.top = e.clientY + 'px';
+
+  const now = performance.now();
+  if (now - lastTrail > 80) {
+    lastTrail = now;
+    const ghost = document.createElement('div');
+    ghost.className = 'scan-trail';
+    ghost.style.top = e.clientY + 'px';
+    document.body.appendChild(ghost);
+    requestAnimationFrame(() => {
+      ghost.style.transition = 'opacity 0.6s ease, top 0.6s ease';
+      ghost.style.opacity = '0';
+      ghost.style.top = (e.clientY + (Math.random() * 6 - 3)) + 'px';
+    });
+    setTimeout(() => ghost.remove(), 700);
+  }
+});
+
+window.addEventListener('mouseleave', () => scanline.classList.remove('active'));
+</script>
+</body>
+</html>
