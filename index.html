@@ -899,7 +899,7 @@
     z-index: 9998;
     opacity: 0.35;
     mix-blend-mode: screen;
-    will-change: top, opacity;
+    will-change: transform, opacity;
   }
 </style>
 </head>
@@ -1524,11 +1524,12 @@ window.addEventListener('mousemove', (e) => {
     const ghost = document.createElement('div');
     ghost.className = 'scan-trail';
     ghost.style.top = e.clientY + 'px';
+    const drift = (Math.random() * 6 - 3);
     document.body.appendChild(ghost);
     requestAnimationFrame(() => {
-      ghost.style.transition = 'opacity 0.6s ease, top 0.6s ease';
+      ghost.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
       ghost.style.opacity = '0';
-      ghost.style.top = (e.clientY + (Math.random() * 6 - 3)) + 'px';
+      ghost.style.transform = `translateY(${drift}px)`;
     });
     setTimeout(() => ghost.remove(), 700);
   }
