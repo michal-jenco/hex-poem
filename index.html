@@ -994,7 +994,7 @@
     <section>
       <h3>audio</h3>
       <dl>
-        <dt>♪ button</dt><dd>bottom-right; pulses until audio is initialized. browsers require a user gesture before sound can play. click anywhere or move the mouse to enable, or click the ♪ to toggle mute</dd>
+        <dt>♪ button</dt><dd>bottom-right; pulses until audio is on. the first click anywhere on the page enables audio. after that, click the ♪ button to toggle mute</dd>
         <dt>letters</dt><dd>bandpass-filtered noise burst</dd>
         <dt>newlines (0A)</dt><dd>low sine thump</dd>
         <dt>punctuation</dt><dd>square-wave click</dd>
@@ -1098,14 +1098,14 @@ const audio = (() => {
   let lastTick = 0;
   const COOLDOWN = 35; // ms — global throttle so many spans don't cacophony
   let enabled = false;
-  // Default muted: any auto-gesture only creates the AudioContext to satisfy
-  // browser autoplay policy. Sound only plays after the user explicitly
-  // clicks the audio button — predictable behavior, no surprises.
+  // Default muted. First explicit click anywhere on the page activates audio
+  // (one-shot). After that, the audio button toggles mute.
   let muted = true;
+  let userActivated = false;
   let masterGain = null;
   const listeners = new Set();
   function notify() { listeners.forEach(fn => fn(state())); }
-  function state() { return { initialized: !!ctx, muted, enabled }; }
+  function state() { return { initialized: !!ctx, muted, enabled, userActivated }; }
 
   function ensure() {
     if (ctx) {
@@ -1236,9 +1236,18 @@ const audio = (() => {
     ensure();
     setMuted(!muted);
   }
+  // First-time activation: ensures the context, unmutes, and sets the flag.
+  // Subsequent calls are no-ops so global click handlers don't undo a manual
+  // mute the user toggled later.
+  function activate() {
+    if (userActivated) return;
+    userActivated = true;
+    ensure();
+    setMuted(false);
+  }
   function onState(fn) { listeners.add(fn); fn(state()); }
 
-  return { tick, ensure, setMuted, toggleMute, onState, state };
+  return { tick, ensure, setMuted, toggleMute, activate, onState, state };
 })();
 
 // Animate `el.textContent` from its current value to `target`, with a glitch reveal.
@@ -2141,7 +2150,16 @@ toggleBar.querySelectorAll('button').forEach(btn => {
 // audio context is initialized so users know to interact.
 // =====================================================================
 const audioBtn = document.getElementById('audioBtn');
-audioBtn.addEventListener('click', () => audio.toggleMute());
+// First click anywhere on the page activates audio. This one-shot listener
+// fires after the audio button's own click handler (event bubbles target
+// → window), so clicking the button itself still ends with audio on.
+window.addEventListener('click', () => audio.activate(), { once: true });
+audioBtn.addEventListener('click', () => {
+  // Before activation, the button click *is* the activation. Afterwards,
+  // it toggles mute.
+  if (audio.state().userActivated) audio.toggleMute();
+  else audio.activate();
+});
 audio.onState(({ initialized, muted }) => {
   // Single visible state — playing or not. Auto-gesture init is invisible
   // (sound stays muted by default until the user clicks the button).
