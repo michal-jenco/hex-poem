@@ -445,21 +445,19 @@
     color: var(--accent);
     border-color: var(--accent);
   }
-  .audio-btn.uninitialized {
+  /* Pulses whenever audio is silent (not yet initialized OR muted) so
+     the button keeps its "click to enable" hint at all times. */
+  .audio-btn:not(.active) {
     color: var(--accent);
     border-color: var(--accent);
     animation: audio-pulse 2.4s ease-in-out infinite;
-  }
-  .audio-btn.muted {
-    color: var(--dim);
-    text-decoration: line-through;
-    text-decoration-thickness: 2px;
   }
   .audio-btn.active {
     color: var(--accent);
     border-color: var(--accent);
     box-shadow: 0 0 14px rgba(147,51,234,0.3);
-    opacity: 0.7;
+    opacity: 0.85;
+    animation: none;
   }
   @keyframes audio-pulse {
     0%, 100% {
@@ -954,7 +952,7 @@
   <button data-mode="drag" type="button" title="Click and drag to corrupt a region — it scrambles, then heals itself.">drag corrupt</button>
 </div>
 
-<button class="audio-btn uninitialized" id="audioBtn" type="button" title="enable / mute audio" aria-label="toggle audio">♪</button>
+<button class="audio-btn" id="audioBtn" type="button" title="click to enable audio" aria-label="toggle audio">♪</button>
 
 <button class="tutorial-btn" id="tutorialBtn" type="button" title="how this works" aria-label="open tutorial">?</button>
 
@@ -1100,7 +1098,10 @@ const audio = (() => {
   let lastTick = 0;
   const COOLDOWN = 35; // ms — global throttle so many spans don't cacophony
   let enabled = false;
-  let muted = false;
+  // Default muted: any auto-gesture only creates the AudioContext to satisfy
+  // browser autoplay policy. Sound only plays after the user explicitly
+  // clicks the audio button — predictable behavior, no surprises.
+  let muted = true;
   let masterGain = null;
   const listeners = new Set();
   function notify() { listeners.forEach(fn => fn(state())); }
@@ -2140,24 +2141,14 @@ toggleBar.querySelectorAll('button').forEach(btn => {
 // audio context is initialized so users know to interact.
 // =====================================================================
 const audioBtn = document.getElementById('audioBtn');
-audioBtn.addEventListener('click', () => {
-  // First click should enable (the click itself satisfies the gesture
-  // requirement); subsequent clicks toggle mute.
-  if (!audio.state().initialized) {
-    audio.setMuted(false);
-    audio.ensure();
-  } else {
-    audio.toggleMute();
-  }
-});
+audioBtn.addEventListener('click', () => audio.toggleMute());
 audio.onState(({ initialized, muted }) => {
-  audioBtn.classList.toggle('uninitialized', !initialized);
-  audioBtn.classList.toggle('muted', initialized && muted);
-  audioBtn.classList.toggle('active', initialized && !muted);
+  // Single visible state — playing or not. Auto-gesture init is invisible
+  // (sound stays muted by default until the user clicks the button).
+  const playing = initialized && !muted;
+  audioBtn.classList.toggle('active', playing);
   audioBtn.textContent = '♪';
-  audioBtn.title = !initialized ? 'click to enable audio'
-                  : muted ? 'audio muted — click to unmute'
-                  : 'audio on — click to mute';
+  audioBtn.title = playing ? 'audio on — click to mute' : 'click to enable audio';
 });
 
 // =====================================================================
